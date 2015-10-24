@@ -3,7 +3,7 @@
 Day | Material | Comments
 --- | --- | ---
 22 Oct | | Exploration and understanding of where and what to start with
-23 Oct | Sipser |
+23 Oct | Sipser: Ch 0, 1, 2 | Automata and Languages: concepts refresh
 
 
 Author | Reference
