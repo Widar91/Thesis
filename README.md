@@ -5,7 +5,7 @@ Day | Material | Comments
 22 Oct | | Exploration and understanding of where and what to start with
 23 Oct | Sipser: Ch 0, 1, 2 | Automata and Languages: concepts refresh
 26 Oct | Sipser: Ch 3 | Church-Turing Thesis + online deepening of the concepts
-27 Oct | Sipser: Ch 4, Turing, Turing Summary |
+27 Oct | Sipser: Ch 4, 5 (beginning), Turing, Turing Summary | Halting problem proof, decidability, reducibility
 
 Author | Reference
 --- | --- 
