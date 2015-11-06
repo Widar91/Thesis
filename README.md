@@ -25,8 +25,10 @@ Day | Sources | Comments
 --- | --- | ---
 Fri, Oct 30 | | Research of material and understanding of how to proceed
 Tue, Nov 3 | [Pierce](http://port70.net/~nsz/articles/book/pierce_types_and_programming_languages_2002.pdf): Ch 1, 2, 3 | <ul><li>Introduction</li><li>Mathematical Preliminaries</li><li>Untyped Arithmetic Expressions</li></ul>
-Thu, Nov 5 | [Pierce](http://port70.net/~nsz/articles/book/pierce_types_and_programming_languages_2002.pdf): Ch 4 |
+Thu, Nov 5 | [Pierce](http://port70.net/~nsz/articles/book/pierce_types_and_programming_languages_2002.pdf): Ch 4, 5 |
+Fri, Nov 6 | [Pierce](http://port70.net/~nsz/articles/book/pierce_types_and_programming_languages_2002.pdf): Ch 5, Y-Combinator | 
 
 Author | Reference
 --- | --- 
 Pierce | [Types and Programming Languages](http://port70.net/~nsz/articles/book/pierce_types_and_programming_languages_2002.pdf)
+Y-Combinator | [Understanding, at last, the Y Combinator - a programmer-friendly perspective](http://hisham.hm/2011/04/04/understanding-at-last-the-y-combinator-a-programmer-friendly-perspective/comments/)
