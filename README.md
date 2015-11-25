@@ -26,7 +26,9 @@ Day | Sources | Comments
 Fri, Oct 30 | | Research of material and understanding of how to proceed
 Tue, Nov 3 | [Pierce](http://port70.net/~nsz/articles/book/pierce_types_and_programming_languages_2002.pdf): Ch 1, 2, 3 | <ul><li>Introduction</li><li>Mathematical Preliminaries</li><li>Untyped Arithmetic Expressions</li></ul>
 Thu, Nov 5 | [Pierce](http://port70.net/~nsz/articles/book/pierce_types_and_programming_languages_2002.pdf): Ch 4, 5 |
-Fri, Nov 6 | [Pierce](http://port70.net/~nsz/articles/book/pierce_types_and_programming_languages_2002.pdf): Ch 5, Y-Combinator | 
+Fri, Nov 6 | [Pierce](http://port70.net/~nsz/articles/book/pierce_types_and_programming_languages_2002.pdf): Ch 5, Y-Combinator | Untyped Lambda Calculus
+Mon, Nov 9 - Tue, Nov 24 | - | Visitors + Influence -> No work has been conducted
+Wed, Nov 25 | [Pierce](http://port70.net/~nsz/articles/book/pierce_types_and_programming_languages_2002.pdf): Ch 5, 6, 7 |
 
 Author | Reference
 --- | --- 
