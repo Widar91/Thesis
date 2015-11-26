@@ -28,7 +28,8 @@ Tue, Nov 3 | [Pierce](http://port70.net/~nsz/articles/book/pierce_types_and_prog
 Thu, Nov 5 | [Pierce](http://port70.net/~nsz/articles/book/pierce_types_and_programming_languages_2002.pdf): Ch 4, 5 |
 Fri, Nov 6 | [Pierce](http://port70.net/~nsz/articles/book/pierce_types_and_programming_languages_2002.pdf): Ch 5, Y-Combinator | Untyped Lambda Calculus
 Mon, Nov 9 - Tue, Nov 24 | - | Visitors + Influence -> No work has been conducted
-Wed, Nov 25 | [Pierce](http://port70.net/~nsz/articles/book/pierce_types_and_programming_languages_2002.pdf): Ch 5, 6, 7 |
+Wed, Nov 25 | [Pierce](http://port70.net/~nsz/articles/book/pierce_types_and_programming_languages_2002.pdf): Ch 5, 6, 7 | Untyped Lambda Calculus
+Thu, Nov 26 | [Pierce](http://port70.net/~nsz/articles/book/pierce_types_and_programming_languages_2002.pdf): Ch 8, 9, 10 | Symply Typed Lambda Calculus
 
 Author | Reference
 --- | --- 
