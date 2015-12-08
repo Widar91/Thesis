@@ -30,6 +30,8 @@ Fri, Nov 6 | [Pierce](http://port70.net/~nsz/articles/book/pierce_types_and_prog
 Mon, Nov 9 - Tue, Nov 24 | - | Visitors + Influence -> No work has been conducted
 Wed, Nov 25 | [Pierce](http://port70.net/~nsz/articles/book/pierce_types_and_programming_languages_2002.pdf): Ch 5, 6, 7 | Untyped Lambda Calculus
 Thu, Nov 26 | [Pierce](http://port70.net/~nsz/articles/book/pierce_types_and_programming_languages_2002.pdf): Ch 8, 9, 10 | Symply Typed Lambda Calculus
+Fri, Nov 27 | [Pierce](http://port70.net/~nsz/articles/book/pierce_types_and_programming_languages_2002.pdf): Ch 11 | Extending the Symply Typed Lambda Calculus
+Mon, Nov 30 - Fri, Dec 4th | Write Yourserf a Scheme in 48 Hrs | Implementation of the [project](https://github.com/Widar91/SchemeInterpreter), refreshing of advanced Haskell concepts
 
 Author | Reference
 --- | --- 
