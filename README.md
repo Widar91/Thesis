@@ -2,7 +2,7 @@
 
 ## Introduction to Theoretical Computer Science
 
-From [University of Edinburgh Course - Introduction to Theoretical Computer Science](http://www.inf.ed.ac.uk/teaching/courses/itcs/lectures.html)
+From [University of Edinburgh Course - Introduction to Theoretical Computer Science](http://www.inf.ed.ac.uk/teaching/courses/itcs/lectures.html). Slides [here](http://www.inf.ed.ac.uk/teaching/courses/itcs/itcs-slides.pdf)
 
 ### Computability Theory & Complexity
 
@@ -37,3 +37,6 @@ Author | Reference
 --- | --- 
 Pierce | [Types and Programming Languages](http://port70.net/~nsz/articles/book/pierce_types_and_programming_languages_2002.pdf)
 Y-Combinator | [Understanding, at last, the Y Combinator - a programmer-friendly perspective](http://hisham.hm/2011/04/04/understanding-at-last-the-y-combinator-a-programmer-friendly-perspective/comments/)
+Lambda Calculus Recursion | [Harvard CS-152 Lecture 8: Lambda calculus encodings and Recursion](http://www.seas.harvard.edu/courses/cs152/2016sp/lectures/lec08-encodings.pdf)
+## Other Resources
+* [Harvard - CS 152: Programming Languages](http://www.seas.harvard.edu/courses/cs152/2016sp/schedule.html)
