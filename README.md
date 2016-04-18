@@ -49,3 +49,17 @@ Harvard University | [Harvard - CS 152: Programming Languages](http://www.seas.h
 * [Concepts in Programming Languages, John C. Mitchell](https://books.google.nl/books?id=AUUgAwAAQBAJ&pg=PA384&lpg=PA384&dq=concepts+in+programming+languages+mitchell+download&source=bl&ots=CIP2lnBg_z&sig=If9xZsI7zSO_R4o2bBcVLGiydiQ&hl=en&sa=X&ved=0ahUKEwiN-sm1pubLAhXFGQ8KHYeFCLsQ6AEISzAI#v=onepage&q=concepts%20in%20programming%20languages%20mitchell%20download&f=false) - Ch 4.3, Intro to Denotational Semantics
 * [Illinois University](http://fsl.cs.illinois.edu/images/6/60/CS422-Spring-2010-04.pdf) - Intro to Denotational Semantics
 * [Denotational Semantics - a Methodology for Language Development, David A. Schmidt ](http://www.bcl.hamilton.ie/~barak/teach/F2008/NUIM/CS424/texts/ds.pdf)
+* [Denotational design with type class morphisms (extended version)](http://conal.net/papers/type-class-morphisms/type-class-morphisms-long.pdf)
+
+## Functional Reactive Programmming
+* [Fair Reactive Programming](http://cs.mcgill.ca/~acave1/papers/fair-reactive.pdf)
+* [Categorical Semantics for Functional Reactive Programming with Temporal Recursion and Corecursion](http://arxiv.org/pdf/1406.2062.pdf)
+* [Ultrametric Semantics of Reactive Programs](https://www.mpi-sws.org/~neelk/frp-lics11.pdf)
+* [Temporal Logic and FRP](http://www.slideshare.net/SergeiWinitzki/temporal-logic-and-functional-reactive-programming)
+* [Functional Reactive Programming from First Principles](http://haskell.cs.yale.edu/wp-content/uploads/2011/02/frp-1st.pdf)
+* [Practical principled FRP: forget the past, change the future, FRPNow!](http://dl.acm.org/citation.cfm?id=2784752)
+
+## Free Monads
+* [Reflection without Remorse](http://okmij.org/ftp/Haskell/zseq.pdf)
+* [Control.Monad.Free.Reflectable](https://hackage.haskell.org/package/reflection-without-remorse-0.9.5/docs/Control-Monad-Free-Reflectable.html)
+* [Free Monads Just Got Cheaper](http://blog.timsears.com/posts/Free_Monads_Just_Got_Cheaper.html)
