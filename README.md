@@ -46,6 +46,7 @@ Harvard University | [Harvard - CS 152: Programming Languages](http://www.seas.h
 
 * [Harvard - CS 152: Programming Languages](http://www.seas.harvard.edu/courses/cs152/2016sp/schedule.html) - Intro to Semantics
 * [University of Edinburgh - Language Semantics and Implementation](http://www.inf.ed.ac.uk/teaching/courses/lsi/) - Operational Semantics
+* [[University of Edinburgh - Formal Programming Language Semantics](http://www.inf.ed.ac.uk/teaching/courses/fpls/)
 * [Concepts in Programming Languages, John C. Mitchell](https://books.google.nl/books?id=AUUgAwAAQBAJ&pg=PA384&lpg=PA384&dq=concepts+in+programming+languages+mitchell+download&source=bl&ots=CIP2lnBg_z&sig=If9xZsI7zSO_R4o2bBcVLGiydiQ&hl=en&sa=X&ved=0ahUKEwiN-sm1pubLAhXFGQ8KHYeFCLsQ6AEISzAI#v=onepage&q=concepts%20in%20programming%20languages%20mitchell%20download&f=false) - Ch 4.3, Intro to Denotational Semantics
 * [Illinois University](http://fsl.cs.illinois.edu/images/6/60/CS422-Spring-2010-04.pdf) - Intro to Denotational Semantics
 * [Denotational Semantics - a Methodology for Language Development, David A. Schmidt ](http://www.bcl.hamilton.ie/~barak/teach/F2008/NUIM/CS424/texts/ds.pdf)
