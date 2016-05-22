@@ -222,13 +222,17 @@ rxMap :: (a -> b) -> Observable a -> Observable b
 rxMap = fmap
 
 
+--rxFilter :: (a -> Bool) -> Observable a -> Observable a
+--rxFilter p = lift (coFilter p)
+--    where
+--        coFilter p obr = Observer (\a -> handle (onError obr) $ when (p a) (onNext obr a))
+--                                  (onError obr)
+--                                  (onCompleted obr)
+--                                  (subscription obr)
+
+-- why is mfilter only defined on MonadPlus?
 rxFilter :: (a -> Bool) -> Observable a -> Observable a
-rxFilter p = lift (coFilter p)
-    where
-        coFilter p obr = Observer (\a -> handle (onError obr) $ when (p a) (onNext obr a))
-                                  (onError obr)
-                                  (onCompleted obr)
-                                  (subscription obr)
+rxFilter p = mfilter p
 
 -- make this take varargs instead of list?
 rxOf :: [a] -> Observable a
