@@ -31,6 +31,9 @@ module Rx
     , Operators.rxMap
     , Operators.rxFlatMap
     , Operators.rxCombineLatest
+    , Operators.rxTake
+    , Operators.rxTakeUntil
+    , Operators.rxTakeWhile
     ) where
 
 import Rx.Types

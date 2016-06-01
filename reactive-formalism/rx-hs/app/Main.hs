@@ -11,18 +11,22 @@ main = do
     --printObserver "doneCL"    >>= subscribe (rxCombineLatest (+) streamI streamS)
     --printObserver "doneAppl"  >>= subscribe (streamF <*> streamI)
     --printObserver "doneAppl2" >>= subscribe (pure (\x -> "Transformed " ++ show x) <*> streamI) 
-    printObserver "doneBind" >>= subscribe (streamI >>= (\x -> Observable (\obr -> onNext obr x >> onNext obr x >> onCompleted obr)))
+    -- printObserver "doneBind" >>= subscribe (streamI >>= (\x -> Observable (\obr -> onNext obr x >> onNext obr x >> onCompleted obr)))
     
     --still not working
     --o <- printObserver "doneBind" 
     --subscribe (streamI >>= (\x -> Observable (\obr -> onNext obr x >> onError obr (throw MyException) >> onCompleted obr))) o
     
-    printObserver "done1" >>= subscribe (streamI `rxMap` (*100) `rxMap` (+5))
-    printObserver "done2" >>= subscribe (streamI `rxMap` (+10))
+    -- printObserver "done1" >>= subscribe (streamI `rxMap` (*100) `rxMap` (+5))
+    -- printObserver "done2" >>= subscribe (streamI `rxMap` (+10))
 
-    printObserver "done2" >>= subscribe (streamI `rxMap` (`div` 0))
-    -- printObserver "done2" >>= subscribe (rxMap (\v -> assert (v==2) True) streamI)
-    printObserver "doneRange" >>= subscribe (observableRange 0 5)
+    -- printObserver "done2" >>= subscribe (streamI `rxMap` (`div` 0))
+    -- -- printObserver "done2" >>= subscribe (rxMap (\v -> assert (v==2) True) streamI)
+    -- printObserver "doneRange" >>= subscribe (observableRange 0 5)
+
+    printObserver "doneTake" >>= subscribe (streamI `rxTake` 1)     
+    printObserver "doneTakeUntil" >>= subscribe (streamI `rxTakeUntil` (>3))    
+    printObserver "doneTakeWhile" >>= subscribe (streamI `rxTakeWhile` (<3))    
     -- printObserver "doneMerge" >>= subscribe (rxMerge streamI streamS)
 
     -- printObserver "done3" >>= subscribe (rxFilter (>1) streamI)
@@ -30,19 +34,19 @@ main = do
     -- printObserver "done5" >>= subscribe (rxFilter (\v -> v `div` 0 == 1) streamI)
     return ()
 
-streamI :: Observable Integer
+streamI :: Observable Int
 streamI = observableCreate (\observer -> do onNext observer 1
                                             onNext observer 2
                                             onNext observer 3 
                                             onCompleted observer)
 
-streamS :: Observable Integer
+streamS :: Observable Int
 streamS = observableCreate (\observer -> do onNext observer 4
                                             onNext observer 5
                                             onNext observer 6
                                             onCompleted observer)
 
-streamF :: Observable (Integer -> Integer)
+streamF :: Observable (Int -> Int)
 streamF = pure (+1)
 
 printObserver :: Show a => String -> IO (Observer a)
