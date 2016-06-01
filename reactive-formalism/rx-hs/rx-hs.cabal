@@ -1,0 +1,46 @@
+name:                rx-hs
+version:             0.1.0.0
+synopsis:            Initial project template from stack
+description:         Please see README.md
+homepage:            https://github.com/githubuser/rx-hs#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Author name here
+maintainer:          example@example.com
+copyright:           2016 Author name here
+category:            Web
+build-type:          Simple
+-- extra-source-files:
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Rx
+  other-modules:       Rx.Observer
+                     , Rx.Observable
+                     , Rx.Operators
+                     , Rx.Subscription
+                     , Rx.Types
+  build-depends:       base >= 4.7 && < 5
+                     , stm
+                     , contravariant  
+  default-language:    Haskell2010
+
+executable rx-hs-exe
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  build-depends:       base
+                     , rx-hs
+                     , stm
+  default-language:    Haskell2010
+
+test-suite rx-hs-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  build-depends:       base
+                     , rx-hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  default-language:    Haskell2010
+
