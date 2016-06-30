@@ -53,6 +53,7 @@ Harvard University | [Harvard - CS 152: Programming Languages](http://www.seas.h
 * [Denotational design with type class morphisms (extended version)](http://conal.net/papers/type-class-morphisms/type-class-morphisms-long.pdf)
 
 ## Functional Reactive Programmming
+* [Functional Reactive Animation](http://conal.net/papers/icfp97/icfp97.pdf)
 * [Fair Reactive Programming](http://cs.mcgill.ca/~acave1/papers/fair-reactive.pdf)
 * [Categorical Semantics for Functional Reactive Programming with Temporal Recursion and Corecursion](http://arxiv.org/pdf/1406.2062.pdf)
 * [Ultrametric Semantics of Reactive Programs](https://www.mpi-sws.org/~neelk/frp-lics11.pdf)
@@ -64,3 +65,9 @@ Harvard University | [Harvard - CS 152: Programming Languages](http://www.seas.h
 * [Reflection without Remorse](http://okmij.org/ftp/Haskell/zseq.pdf)
 * [Control.Monad.Free.Reflectable](https://hackage.haskell.org/package/reflection-without-remorse-0.9.5/docs/Control-Monad-Free-Reflectable.html)
 * [Free Monads Just Got Cheaper](http://blog.timsears.com/posts/Free_Monads_Just_Got_Cheaper.html)
+
+## Others
+* [Iteratees](http://okmij.org/ftp/Haskell/Iteratee/describe.pdf)
+* [The Essence of the Iterator Pattern](http://www.cs.ox.ac.uk/jeremy.gibbons/publications/iterator.pdf)
+* [Cheap (But Functional) Threads](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.84.4430&rep=rep1&type=pdf)
+
