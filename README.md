@@ -70,4 +70,4 @@ Harvard University | [Harvard - CS 152: Programming Languages](http://www.seas.h
 * [Iteratees](http://okmij.org/ftp/Haskell/Iteratee/describe.pdf)
 * [The Essence of the Iterator Pattern](http://www.cs.ox.ac.uk/jeremy.gibbons/publications/iterator.pdf)
 * [Cheap (But Functional) Threads](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.84.4430&rep=rep1&type=pdf)
-
+* [Cont Monad](https://www.imperialviolet.org/2007/07/04/continuation-monads-for-state-machines.html)
