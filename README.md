@@ -66,6 +66,11 @@ Harvard University | [Harvard - CS 152: Programming Languages](http://www.seas.h
 * [Control.Monad.Free.Reflectable](https://hackage.haskell.org/package/reflection-without-remorse-0.9.5/docs/Control-Monad-Free-Reflectable.html)
 * [Free Monads Just Got Cheaper](http://blog.timsears.com/posts/Free_Monads_Just_Got_Cheaper.html)
 
+## Process Algebra
+* [Introduction to Process Algebra](http://www.few.vu.nl/~wanf/BOOKS/procalg.pdf)
+* [A gentle introfuction to Process Algebra (not so gentle!)](https://www.pst.ifi.lmu.de/Lehre/fruhere-semester/sose-2013/formale-spezifikation-und-verifikation/intro-to-pa.pdf)
+* [Trace-based Process Algebras for Real-Time Probabilistic Systems](http://www.prismmodelchecker.org/papers/stefanosthesis.pdf)
+
 ## Others
 * [Iteratees](http://okmij.org/ftp/Haskell/Iteratee/describe.pdf)
 * [The Essence of the Iterator Pattern](http://www.cs.ox.ac.uk/jeremy.gibbons/publications/iterator.pdf)
