@@ -1,0 +1,254 @@
+%
+% File: chap01.tex
+% Author: 
+% Description: 
+%
+\let\textcircled=\pgftextcircled
+\chapter{Introduction}
+\label{chap:intro}
+
+\todo[inline]{Science Bitch Quote}
+
+\initial{T}he following write up is meant as a summary of what my thesis will expand upon. When thinking about effects and how they combine with different types of computations, we can come up with the following diagram that nicely summarizes them.
+
+\begin{center}
+    \begin{tabular}{| l | l | l |}
+    \hline
+    & \textbf{One} & \textbf{Many} \\ 
+    \hline
+	\textbf{Synch} & f :: () -> a & Iterable a \\ 
+	\hline
+	\textbf{Asynch} & callback :: a -> () & ??? \\ 
+	\hline
+    \end{tabular}
+\end{center}
+
+\todo[inline]{Find duality in the first column to justify the use in the second? Does what I wrote up there work?}
+
+When our goal is to retrieve a single value of type \code{a} synchronously, we will make use of a function whose return type is \code{a} itself. In an asynchronous setting, on the other hand, our function will return a \code{Future a}, i.e. a computation that at a certain point in the future will result in a value of type \code{a}.
+
+When we are dealing with multiple values, we will typically return a collection which will contain our results. An \code{Iterable a} is an abstraction over collections which generalizes the concept of a data structure containing multiple values which are synchronously retrievable.
+
+The purpose of this thesis is to explore the design space left empty in the above diagram and derive a solution to the problem of dealing with multiple asynchronous values in our programs.
+
+%=======
+\section{Iterables}
+\label{sec:sec01}
+
+
+We begin by introducing the concept of \code{Iterable}, made famous by the Gang of Four pattern of the same name and widely adopted by most recent programming languages. 
+
+An Iterable is a programming structure which enables the user to traverse a collection of data, abstracting over the underlying implementation.
+
+The interface and semantics of Iterables are fixed across programming languages.\\
+
+\todo[inline]{Add C\# version}
+
+\haskellcode{chapters/chapter01/src/iterable_interface.hs}\\
+
+Note that different programming languages might expose slightly different interfaces for the Iterator construct. These differences  affect the way the API is used by programmes, but do not affect the essence of the Iterator pattern and therefore are not relevant. For this reason and without loss of generality, we will make use of the Java-like definition of Iterator in the reminder of the discussion.
+
+We will now make use of a few mathematical concepts in order to explore the design space around collections of asynchronous values: duality, continuations and CPS, products and coproducts and lastly currying and uncurrying. See Appendix A for a quick introduction to these concepts.
+
+Let's start by stripping down the Iterable interface of all the unnecessary API/imperative design features so that we can derive it's essence and easily reason about it's properties.	
+
+The first step is simplifying the Iterator interface: when we take a close look, we can easily see that an Iterator is nothing but a function which returns either a value - when hasNext returns true and next is called - or nothing - when hasNext returns false. Additionally, and Iterator can also throw an exception in the case that next is called when the underlying collection has been exhausted, something that was not explicit in the C\# definition.
+
+Merging these consideration with the notion of coproducts and the maybe types, we obtain the following definition of Iterable.\\
+
+\haskellcode{chapters/chapter01/src/iterable_coproducts_maybe.hs}\\
+
+Note how the moveNext function still produces an \code{IO} computation.
+
+Let's now go one step further and simplify our definition even more, with the purpose of understanding the real essence of an Iterable. In order to achieve this, let's forget for a moment about errors and no values returned from an iterator, i.e. let's ignore operational concerns such as exceptions and termination.\\
+
+\haskellcode{chapters/chapter01/src/iterable_types.hs}\\
+
+An Iterable is simply a function which, when invoked, returns an Iterator and an Iterator is itself a function which returns a computation that will eventually result in a value of type a. In some way, we can think of an Iterator as a getter function, and of an Iterable as a getter of a getter.
+
+%=======
+\section{Into the rabbit hole: Deriving the Observable}
+\label{sec:sec02}
+
+As we noticed before, the way we deal with a single value in an synchronous environment is dual to the asynchronous method, flipping the arrows brings us from a function resulting in a value of type \code{a} to one accepting an \code{a}. 
+
+It seems reasonable now to apply the same concept of duality to the Iterable in order to find a possible solution to our original problem, dealing with a collection of asynchronous values.\\
+
+\haskellcode{chapters/chapter01/src/iter_to_obs.hs}\\
+
+It is straightforward to see how duality plays out in the derivation of the new types.
+
+This dualisation leaves us with an interface which is interesting under many point of views. First of all, to link back to the observation that an Iterable is a getter of a getter, we can observe that the Observable plays exactly the opposite role, that is, a setter of a setter, the Observer. 
+
+This brings us to another interesting observation, the Iterable embodies the idea of pull collections, the Iterable will give us a new Iterator whenever we ask for it and the Iterator, in turn, will provide us with the next value whenever we decide to pull one from it. Dually, the Observable interface embodies the idea of push collections: we push a callback, the Observer, inside the Observable, which, in turn, will push a value into the Observer whenever one becomes available. 
+
+From here we can take two roads, one is to analyze further the type that we obtained and see what it's properties are and what we can understand from it; the second road is to un-simplify its definition and augment it so as to arrive to a usable API for handling asynchronous collections. We will start with the first.
+
+For those who are familiar with functional programming it will not be hard to see how the Observable type resembles a function written in continuation passing style.\\
+
+\haskellcode{chapters/chapter01/src/obs_cont.hs}\\
+
+We can easily observe how an Observable is nothing more than a CPS function where the result type \code{r} is instantiated to \code{IO ()}.
+
+This observation opens up a great deal of mathematics properties and laws that we can prove about observables.
+
+First of all, let's convince ourselves that a CPS function, and therefore an Observable, truly embodies a push based model of computation. The very definition of continuation tells us that a continuation represents the "rest of the computation"; when looking at it from an observable prospective, the continuation, i.e. the observer, is the function that specifies what needs to happen to a value, whenever this becomes available, that is, whenever the observable pushes it to the observer. Since the continuation can be called multiple times, it is easy to see how this structure lets us deal with multiple values that are might come in at different times in the future.
+
+Note how an observable is "paused" until it receives an observer to which it can push the values it produces. This comes precisely from the definition of CPS function, i.e. a suspended computation which, given another function as argument, the continuation, will produce the final result.  
+
+Therefore an observable is a suspended computation that will start producing values once we pass in an observer, the continuation that will specify what happens to a value once it is computed. The observable will call the observer every time it produces a value.
+
+%=======
+\section{Observables are Continuations}
+\label{sec:sec03}
+
+\todo[inline]{Talk about the interface that we want to get, even a minimal one now and explain how this relates to the cont monad, e.g. subscribe = ContT. Introduce the ContT monad and show the minimal reference implementation.}
+
+Our goal is now to start from this theoretical explanation of a push based collection and build a usable API. In the previous section we observed how and Observable is a particular case of the continuation monad where the result type is a computation which has unit as a result type. The Haskell language provides a monad construct for expressing continuations as well as a monad transformer in order to stack continuations on top of other monads. A monad transformer is exactly what we need in order to express our continuations resulting in IO.\\
+
+\haskellcode[firstline=1,lastline=2]{chapters/chapter01/src/obs_contT.hs}\\
+
+Our API will also need to provide functions to create as well as start the Observable stream.\\
+
+\haskellcode{chapters/chapter01/src/obs_functions.hs}\\
+
+We can already notice how This should come as no surprise after our discussion regarding the connection between Observables and the Continuation monad. Conversely, these equivalences should justify even more the use of this model of computation for reactive programming.
+
+At this point we have all the necessary tools to create and run an Observable\\
+
+\haskellcode{chapters/chapter01/src/create_run.hs}\\
+
+The example above is a toy example, let's try with a more realistic one such that we can show that our basic implementation of rx based on continuations works just as well as a full blown one in terms of handling asynchronous data.\\ 
+
+\todo[inline]{Put the actual demo that listens to keyboard presses. In the example, press 3 times and see that all the events are handled and none are lost.}
+\haskellcode[firstline=13]{chapters/chapter01/src/create_run_demo.hs}\\
+
+\todo[inline]{Elaborate better this part. Ask Erik for input.}
+It is worth noting that rx in itself is not at all async in handling data unless we use schedulers, although it doea handle asynch data. This is a common misconception, even if you have a single thread that doesn't mean you cannot handle async data, actually you are async because the control flow isn't linear. Naturally, the thing is that certain queries (the ones that don't use schedulers) will simply block your single thread and prevent other things from happening.
+
+This demo shows exactly this, even though the processing of the data is synchronous, the data itself, being mouse movements, is inherently async.
+
+At this point in the discussion we have a working implementation of a push based collection purely derived from the underlying theory of duality and continuations. The next step in augmenting out library is to note that continuations are monads and, being the Observable an instance of the continuation monad, it is itself a monad. This observation comes with great benefits, we can get mathematical laws - the monad laws - proven for free for our structure and, from a more practical point of view, we get functions defined for free for the Observable: fmap (from Functor), flatmap and return.
+
+\todo[inline]{Say more on the monad laws, even if they are trivially proved.}
+
+We will soon see how the implementation of these functions will change and move from the standard one the moment we start moving towards a more operational implementation for real world use.
+
+%=======
+\section{Out of the rabbit hole: Towards a usable API}
+\label{sec:sec04}
+
+\todo[inline]{Start from the minimal reference implementation, add exceptions and termination, explain how flatmap changes and lastly add subscription and talk about cancellation and the conctract.}
+
+Up until now we have analyzed the essence of the Observable, leaving out the operational concerns that would come up when our goal is to design a usable API. Now we will slowly and step by step re-introduce these concerns in order to go from a theoretical definition of Observables to a more operational and therefore usable one.
+
+Remember how, at the beginning of our discussion, we greatly simplified the Iterable interface in order to derive a type that represents the essence of an Iterable. We later applied the duality principle from category theory in order to derive the Observable. Now, we want to walk the semplification path backwards and, step by step, re-introduce all that we simplified before in order to arrive to a usable API.
+
+%=======
+\subsection{Adding Termination and Error handling}
+\label{subsec:subsec01}
+
+
+The first thing we want to re-introduce is handling exceptions and termination of a stream. Where an Iterable can return a value, terminate or throw an exception when we ask for a value, and Observable, being it's dual, can produce one or more values, terminate or throw an exception when it is subscribed to. 
+
+A more appropriate type for our interface is then the following.\\
+
+\haskellcode[firstline=4,lastline=5]{chapters/chapter01/src/obs_contT.hs}\\
+
+Now, this code is not exactly the definition of readable; let's apply some good design skills to make it more pleasant to the eye without changing it's meaning.\\
+
+\haskellcode[firstline=4,lastline=11]{chapters/chapter01/src/obs_events.hs}\\
+
+Although this might not look like a big change, it greatly influences the design of our API. We are, in fact, changing our instantiation of the continuation monad to an input type that is not \code{a} anymore, but \code{Event a}. On the other hand, out type variable for Observable is still \code{a}. This is not an issue per se, but it has one big consequence: the flatmap function that we inherit from the continuation monad is not the one that we want to expose from out API anymore. The types differ like so.\\
+
+\haskellcode[firstline=13,lastline=17]{chapters/chapter01/src/obs_events.hs}\\
+
+This has many implications, first of all, we are gonna need to implement flatmap by ourselves.. see todo below...
+
+\todo[inline]{ASK ERIK: Observable being a type synonym, it still is a monad in the cont sense (i.e. with a instantiated to Event a). Do we need to instantiate monad with our flatmap definition and prove the laws there as well?}
+
+\haskellcode[firstline=19,lastline=22]{chapters/chapter01/src/obs_events.hs}\\
+
+\todo[inline]{We could have implemented Observer as a datatype containing 3 functions, but that would complicate the explaination of Event a and the flatmap implementation problem, so I chose to go with the Event a}
+
+\todo[inline]{Modify keyboard press example from before to handle errors and termination. Point to later discussion regarding the rx contract, since now we can detect termination and errors but there is no guarantee that nothing will come after we receive them, i.e. that we abide the contract.}
+
+%=======
+\subsection{Adding Subscriptions}
+\label{subsec:subsec02}
+
+With error handling and termination, our implemnentation starts getting more and more usable. We now want to add a mechanism that will allow us to stop an observable stream from the outside (as opposed to waiting for an onCompleted) whenever we don't require it's data anymore. 
+
+In order to achieve this we will use a new datatype, Subscription. The idea is that the subscribe function will return a Subscription to the user who will later be able to call unsubscribe on it and stop the stream associated to it from producing any more values.
+
+\todo[inline]{Talk about the best effort in canceling work and eventual consistency with the contract.}
+
+A Subscription in itself is nothing more than an action to perform once we stop an observable stream.
+
+\haskellcode[firstline=1,lastline=1]{chapters/chapter01/src/subsciption.hs}\\
+
+Our goal now is to implement a cancellation mechanism that would stop the Observable. This will be achieved by calling a function unsubscribe, which will prevent, from that moment on, any events to be signaled to any subscribed observer.
+
+This is achieved by wrapping the user supplied observer to the subscribe function with an internal one which adds this functionality and forwards all accepted events to the supplied one.
+
+\todo[inline]{the code for safe observer.}
+\haskellcode[firstline=1,lastline=1]{chapters/chapter01/src/subsciption.hs}\\
+
+As a design decision, when unsubscribe is called on an observable subscription, the observable sequence will make a best effort attempt to stop all outstanding work. This means that any queued work that has not been started will not start. Any work that is already in progress might still complete as it is not always safe to abort work that is in progress. Results from this work will not be signaled to any previously subscribed observer instances.
+
+
+\todo[inline]{Motivation for children subscriptions: some operators will create inner observables and therefore will need to unsubscribe from them when the outer observable is unsubscribed from.}
+
+%=======
+\section{The Reactive Contract}
+\label{sec:sec01}
+
+Begins a section.
+
+\subsection{Subsection}
+\label{subsec:subsec01}
+
+Begins a subsection.
+
+\listoftodos
+
+%%A figures matrix.
+%\begin{figure}[t!]
+%\centering
+%\begin{minipage}{3.3cm}
+%    \centering
+%    \subtop[]{\includegraphics[height=0.28\textheight]{fig01/Nswellings}\label{sf:multiRH02a}}
+%\end{minipage}
+%\hspace{0.5cm}
+%\begin{minipage}{3.3cm}
+%    \centering
+%    \subtop[]{\includegraphics[height=0.27\textheight]{fig01/Mswellings}\label{sf:multiRH02b}}
+%\end{minipage}
+%\hspace{1.3cm}
+%\begin{minipage}{3.3cm}
+%    \centering
+%    \subtop[]{\includegraphics[height=0.27\textheight]{fig01/rhd1}\label{sf:multiRH02c}}
+%\end{minipage}
+%\\ \vspace{0.1cm}
+%\begin{minipage}{10cm}
+%    \centering
+%    \subtop[]{\includegraphics[height=0.145\textheight]{fig01/mutantrhd6}\label{sf:multiRH02d}}
+%\end{minipage}
+%\\ \vspace{0.1cm}
+%\begin{minipage}{10cm}
+%    \centering
+%    \subtop[]{\includegraphics[height=0.16\textheight]{fig01/auxab}\label{sf:multiRH02e}}
+%\end{minipage}
+%\mycaption[Hair-forming mutant cells.]{(a) A mutant RH cell. Asterisks show multiple sites of RH initiation in a single root hair cell (indicated by the arrows). Figure reproduced from \cite{rigas01}. (b)~Hair-forming cell with three RH initiation locations. The bar represents $50\mu m$. Figure reproduced from \cite{massuci01}. (c) Large bump in mutant {\itshape rhd1}. Figure reproduced from \cite{griersonRH}. (d) Mutant overexpressing gene {\itshape ROP2}; from right-hand to left-hand, numbers indicate progressive snapshots at different times. RH initiation sites are indicated by the arrows. The bar represents $75\mu m$. Figure reproduced from~\cite{mjones01}. (e)~Mutants affected by auxin. On the left-hand side, RH site is farther away from the apical end (left arrow cap); on the right-hand side, multiple RH locations (arrows). Figure reproduced from~\cite{payne01}.}
+%\label{fig:multiRH02}
+%\end{figure}
+%
+%% A single figure
+%\begin{figure}[t!]
+%	\centering
+%	\includegraphics[height=0.35\textheight]{fig01/devepzones}
+%	\mycaption[Developmental zones of an Arabidopsis root.]{Developmental zones of an Arabidopsis root. Figure reproduced from \cite{griersonRH}.}
+%	\label{fig:RHP02}
+%\end{figure}
+
+%=========================================================
