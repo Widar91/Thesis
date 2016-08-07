@@ -78,3 +78,4 @@ Harvard University | [Harvard - CS 152: Programming Languages](http://www.seas.h
 * [Cont Monad](https://www.imperialviolet.org/2007/07/04/continuation-monads-for-state-machines.html)
 * [Cont Monad 2] (https://en.wikibooks.org/wiki/Haskell/Continuation_passing_style)
 * [Pipes](http://jozefg.bitbucket.org/posts/2015-06-01-pipes.html)
+* [Temporal Logic and FRP](http://www.slideshare.net/SergeiWinitzki/temporal-logic-and-functional-reactive-programming)
