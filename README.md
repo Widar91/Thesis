@@ -66,10 +66,17 @@ Harvard University | [Harvard - CS 152: Programming Languages](http://www.seas.h
 * [Control.Monad.Free.Reflectable](https://hackage.haskell.org/package/reflection-without-remorse-0.9.5/docs/Control-Monad-Free-Reflectable.html)
 * [Free Monads Just Got Cheaper](http://blog.timsears.com/posts/Free_Monads_Just_Got_Cheaper.html)
 
+## Process Algebra
+* [Introduction to Process Algebra](http://www.few.vu.nl/~wanf/BOOKS/procalg.pdf)
+* [A gentle introfuction to Process Algebra (not so gentle!)](https://www.pst.ifi.lmu.de/Lehre/fruhere-semester/sose-2013/formale-spezifikation-und-verifikation/intro-to-pa.pdf)
+* [Trace-based Process Algebras for Real-Time Probabilistic Systems](http://www.prismmodelchecker.org/papers/stefanosthesis.pdf)
+
 ## Others
 * [Iteratees](http://okmij.org/ftp/Haskell/Iteratee/describe.pdf)
 * [The Essence of the Iterator Pattern](http://www.cs.ox.ac.uk/jeremy.gibbons/publications/iterator.pdf)
 * [Cheap (But Functional) Threads](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.84.4430&rep=rep1&type=pdf)
 * [Cont Monad](https://www.imperialviolet.org/2007/07/04/continuation-monads-for-state-machines.html)
-* [Cont Monad 2] (https://en.wikibooks.org/wiki/Haskell/Continuation_passing_style)
+* [Cont Monad 2](https://en.wikibooks.org/wiki/Haskell/Continuation_passing_style)
 * [Pipes](http://jozefg.bitbucket.org/posts/2015-06-01-pipes.html)
+* [Temporal Logic and FRP](http://www.slideshare.net/SergeiWinitzki/temporal-logic-and-functional-reactive-programming)
+* [Continuation-based relative-time FRP](http://www.paolocapriotti.com/blog/2012/06/04/continuation-based-relative-time-frp/)
