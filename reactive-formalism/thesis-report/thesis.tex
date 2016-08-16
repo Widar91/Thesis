@@ -173,7 +173,7 @@
 \usepackage{verbatim}					%Permits pre-formated text insertion
 \usepackage{upgreek }					%Calls other kind of greek alphabet
 \usepackage{latexsym}					%Extra symbols
-\usepackage[square,numbers,
+\usepackage[super,square,numbers,
 		     sort&compress]{natbib}		%Calls bibliography commands 
 \usepackage{url}						%Supports url commands
 \usepackage{etex}						%eTeXÕs extended support for counters
@@ -201,6 +201,12 @@
 
 % Todo package
 \usepackage[colorinlistoftodos,prependcaption,textsize=tiny]{todonotes}
+%
+
+% Epigraph package
+\usepackage{epigraph}
+\setlength{\afterepigraphskip}{\baselineskip}
+%\setlength\epigraphrule{0pt}
 %
 
 %Minted package/ Code formatting
