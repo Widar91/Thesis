@@ -9,6 +9,8 @@
 
 \epigraph{\hspace{4ex}\textit{The cold winds are rising in the North... Brace yourselves, winter is coming.}}{--- George R.R. Martin,\\ \textit{A Game of Thrones}}
 
+\todo{You know nothing John Snow quote}
+ 
 With the evolution of technologies brought in by the new millennium and the exponential growth of Internet-based services targeting millions of users all over the world, the Software Engineers' community has been continuously tested by an ever growing number of challenges related to management of increasingly large amounts of user data\cite{furht2010handbook}. 
 
 This phenomena is commonly referred to as Big Data. A very popular 2001 research report\cite{laney20013d} by analyst Doug Laney, proposes a definition of big data based on its three defining characteristics:
@@ -45,11 +47,16 @@ In the exposition of our work we will use Haskell as the reference programming l
 \todo[inline]{Write notation and conventions}
 
 \let\textcircled=\pgftextcircled
-\chapter{Into the Rabbit Hole}
-\label{chap:1}
+\chapter{Reactive Programming}
 
 \epigraph{\hspace{4ex}\textit{"It was much pleasanter at home," thought poor Alice, "when one wasn't always growing larger and smaller, and being ordered about by mice and rabbits. I almost wish I hadn't gone down the rabbit-hole -- and yet -- and yet -- ..."}}{--- Lewis Carol,\\ \textit{Alice in Wonderland}}
 
+
+In this chapter ... bla bla bla
+
+\todo[inline]{Write chapter introduction}
+
+\section{The essence of Reactive Programming}
 
 The use of the term reactive programming in scientific literature is dated back to the mid-sixties\cite{scopus-reactive}. A relevant and insightful definition was given by G. Berry in 1991\cite{berry1991reactive} as he describes reactive programs in relation to their counterparts, interactive programs:
 
@@ -61,23 +68,25 @@ Interactive programs concretize the idea of a pull-based model of computation, w
 
 Reactive programs, on the contrary, embody the idea of a push-based - or event-driven - model of computation, where the speed at which the program interacts with the environment is determined by the environment rather than the program. In other words, it is now the producer of the data - i.e. the environment - who determines the speed at which events will occur whilst the program's role reduces to that of a silent observer that will react upon receiving events. Standard example of such systems are GUI applications dealing with various events originating from user input - e.g. mouse clicks, keyboard button presses - and programs dealing with stock market, social media or any other kind of asynchronous updates.  
 
+\section{Why Reactive Programming?}
 
+Considering the definition and examples of reactive programs we analyzed in the previous section, let's now try to formalize the class of problems this paradigm is specifically well-suited for.
 
-The following write up is meant as a summary of what my thesis will expand upon. When thinking about effects and how they combine with different types of computations, we can come up with the following diagram that nicely summarizes them.
+The diagram below provides a collection of types offered by common programming languages for handling data, parameterized over two variables: the size of the data, either one or multiple and the way data is handled, either by synchronous or asynchronous computations\cite{meijer2015spicing}.
 
 \begin{center}
     \begin{tabular}{| l | l | l |}
     \hline
     & \textbf{One} & \textbf{Many} \\ 
     \hline
-	\textbf{Sync} & f :: () -> a & Iterable a \\ 
+	\textbf{Sync} & \code{a} & \code{Iterable a} \\ 
 	\hline
-	\textbf{Async} & callback :: a -> () & ??? \\ 
+	\textbf{Async} & \code{Future a} & \textit{Reactive Programming} \\ 
 	\hline
     \end{tabular}
 \end{center}
 
-\todo[inline]{Find duality in the first column to justify the use in the second? Does what I wrote up there work?}
+\todo[inline]{Mention inversion of control.}
 
 When our goal is to retrieve a single value of type \code{a} synchronously, we will make use of a function whose return type is \code{a} itself; one the function is called, we will block until a value is computed and returned. In an asynchronous setting, on the other hand, our function will return a \code{Future a}, i.e. a computation that at a certain point in the future will result in a value of type \code{a}.
 
@@ -85,7 +94,16 @@ When we are dealing with multiple values, we will typically return a collection 
 
 The purpose of this thesis is to explore the design space left empty in the above diagram and derive a solution to the problem of dealing with multiple asynchronous values in our programs.
 
-%=======
+
+\section{Reactive Programming in the Real World}
+
+Talk about FRP, Reactive Streams, Rx and other stuff. CIte survey paper
+
+
+\chapter{Into the Rabbit Hole}
+
+\epigraph{\hspace{4ex}\textit{"It was much pleasanter at home," thought poor Alice, "when one wasn't always growing larger and smaller, and being ordered about by mice and rabbits. I almost wish I hadn't gone down the rabbit-hole -- and yet -- and yet -- ..."}}{--- Lewis Carol,\\ \textit{Alice in Wonderland}}
+
 \section{Iterables}
 \label{sec:sec01}
 
@@ -189,8 +207,8 @@ At this point in the discussion we have a working implementation of a push based
 We will soon see how the implementation of these functions will change and move from the standard one the moment we start moving towards a more operational implementation for real world use.
 
 %=======
-\section{Out of the rabbit hole: Towards a usable API}
-\label{sec:sec04}
+\chapter{Out of the rabbit hole: Towards a usable API}
+
 
 \todo[inline]{Start from the minimal reference implementation, add exceptions and termination, explain how flatmap changes and lastly add subscription and talk about cancellation and the conctract.}
 
