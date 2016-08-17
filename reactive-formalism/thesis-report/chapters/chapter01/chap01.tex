@@ -56,9 +56,9 @@ In this chapter ... bla bla bla
 
 \todo[inline]{Write chapter introduction}
 
-\section{The essence of Reactive Programming}
+\section{The essence of Reactive Programs}
 
-The use of the term reactive programming in scientific literature is dated back to the mid-sixties\cite{scopus-reactive}. A relevant and insightful definition was given by G. Berry in 1991\cite{berry1991reactive} as he describes reactive programs in relation to their counterparts, interactive programs:
+The use of the term reactive program in scientific literature is dated back to the mid-sixties\cite{scopus-reactive}. A relevant and insightful definition was given by G. Berry in 1991\cite{berry1991reactive} as he describes reactive programs in relation to their dual counterparts, interactive programs:
 
 \begin{quote}
 \hspace{4ex}``\textit{Interactive programs} interact at their own speed with users or with other programs; from a user point of view, a time-sharing system is interactive. \textit{Reactive programs} also maintain a continuous interaction with their environment, but at a speed which is determined by the environment, not by the program itself.''
@@ -68,12 +68,13 @@ Interactive programs concretize the idea of a pull-based model of computation, w
 
 Reactive programs, on the contrary, embody the idea of a push-based - or event-driven - model of computation, where the speed at which the program interacts with the environment is determined by the environment rather than the program. In other words, it is now the producer of the data - i.e. the environment - who determines the speed at which events will occur whilst the program's role reduces to that of a silent observer that will react upon receiving events. Standard example of such systems are GUI applications dealing with various events originating from user input - e.g. mouse clicks, keyboard button presses - and programs dealing with stock market, social media or any other kind of asynchronous updates.  
 
-\section{Why Reactive Programming?}
+\section{Why Reactive Programming Matters}
 
-Considering the definition and examples of reactive programs we analyzed in the previous section, let's now try to formalize the class of problems this paradigm is specifically well-suited for.
+Considering the definition and examples of reactive programs we analyzed in the previous section, let's now try to formalize the class of problems the reactive programming paradigm is specifically well-suited for.
 
-The diagram below provides a collection of types offered by common programming languages for handling data, parameterized over two variables: the size of the data, either one or multiple and the way data is handled, either by synchronous or asynchronous computations\cite{meijer2015spicing}.
+The table below provides a collection of types offered by common programming languages for handling data, parameterized over two variables: the size of the data, either one or multiple values, and the way data is handled, either by synchronous or asynchronous computations\cite{meijer2015spicing}.
 
+\todo{Fix the table, add caption.}
 \begin{center}
     \begin{tabular}{| l | l | l |}
     \hline
@@ -84,15 +85,23 @@ The diagram below provides a collection of types offered by common programming l
 	\textbf{Async} & \code{Future a} & \textit{Reactive Programming} \\ 
 	\hline
     \end{tabular}
+    %\caption{The four fundamental effects}
 \end{center}
 
 \todo[inline]{Mention inversion of control.}
 
-When our goal is to retrieve a single value of type \code{a} synchronously, we will make use of a function whose return type is \code{a} itself; one the function is called, we will block until a value is computed and returned. In an asynchronous setting, on the other hand, our function will return a \code{Future a}, i.e. a computation that at a certain point in the future will result in a value of type \code{a}.
+The first row shows that synchronous functions come in two flavors: classic functions that return a single value of type \code{a} and functions that produce a collection of results of type \code{a}, abstracted through the \code{Iterable a} interface (See section \ref{sec:iterables}). These types of functions embody the standard imperative, pull-based approach to programming, where a call to a function synchronously blocks until the result is produced. 
 
-When we are dealing with multiple values, we will typically return a collection which will contain our results. An \code{Iterable a} is an abstraction over collections which generalizes the concept of a data structure containing multiple values which are synchronously retrievable.
+Moving on to the second row, we encounter \code{Future a}, an interface representing an asynchronous computation that, at a certain point in the future, will result in a value of type \code{a}. Futures are generally created by supplying two callbacks together with the asynchronous computation, one to be executed in case of success and the other one in case of error. 
 
-The purpose of this thesis is to explore the design space left empty in the above diagram and derive a solution to the problem of dealing with multiple asynchronous values in our programs.
+Programming languages, however, are not as well equipped when it comes to handling asynchronous computations resulting in multiple values. The issue lies in the fact that the program's control flow is dictated by the environment rather than the program itself, making it very hard to model such problems with commonly known control structures, which are optimized for sequential models of computation.
+
+This class of problems reflects the definition of reactive programs we analyzed in the previous section, where the environment asynchronously - i.e. at its own speed - pushes multiple events to the program. 
+
+Traditional solutions typically involve developers manually trying to compose callbacks by explicitly writing CPS (continuation passing style) code\cite{meijer2015spicing}, resulting in what it's commonly referred to as \textit{Callback Hell}\cite{edwards2009coherent}.
+
+\todo{Rewirte this part.}
+The reactive programming paradigm sets out to provide interfaces and abstractions to facilitate modeling the aforementioned class of problems. In the next session we will discuss and analyze various approaches and libraries attempting to implement this paradigm, motivating our need for a mathematical formalization to remove doubts and confusion. 
 
 
 \section{Reactive Programming in the Real World}
@@ -105,7 +114,7 @@ Talk about FRP, Reactive Streams, Rx and other stuff. CIte survey paper
 \epigraph{\hspace{4ex}\textit{"It was much pleasanter at home," thought poor Alice, "when one wasn't always growing larger and smaller, and being ordered about by mice and rabbits. I almost wish I hadn't gone down the rabbit-hole -- and yet -- and yet -- ..."}}{--- Lewis Carol,\\ \textit{Alice in Wonderland}}
 
 \section{Iterables}
-\label{sec:sec01}
+\label{sec:iterables}
 
 
 We begin by introducing the concept of \code{Iterable}, made famous by the Gang of Four pattern of the same name and widely adopted by most recent programming languages. 
