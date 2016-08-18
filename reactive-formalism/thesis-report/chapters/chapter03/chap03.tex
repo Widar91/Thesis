@@ -1,0 +1,122 @@
+\let\textcircled=\pgftextcircled
+\Chapter{Out of the rabbit hole}{Towards a usable API}
+
+
+\todo[inline]{Start from the minimal reference implementation, add exceptions and termination, explain how flatmap changes and lastly add subscription and talk about cancellation and the conctract.}
+
+Up until now we have analyzed the essence of the Observable, leaving out the operational concerns that would come up when our goal is to design a usable API. Now we will slowly and step by step re-introduce these concerns in order to go from a theoretical definition of Observables to a more operational and therefore usable one.
+
+Remember how, at the beginning of our discussion, we greatly simplified the Iterable interface in order to derive a type that represents the essence of an Iterable. We later applied the duality principle from category theory in order to derive the Observable. Now, we want to walk the semplification path backwards and, step by step, re-introduce all that we simplified before in order to arrive to a usable API.
+
+\section{Termination and Error Handling}
+
+The first thing we want to re-introduce is handling exceptions and termination of a stream. Where an Iterable can return a value, terminate or throw an exception when we ask for a value, and Observable, being it's dual, can produce one or more values, terminate or throw an exception when it is subscribed to. 
+
+A more appropriate type for our interface is then the following.\\
+
+\haskellcode[firstline=4,lastline=5]{src/obs_contT.hs}\\
+
+\todo[inline]{Remove this Event shit and move to the custom type directly? Not sure, I like the discussion on bind.}
+
+Now, this code is not exactly the definition of readable; let's apply some good design skills to make it more pleasant to the eye without changing it's meaning.\\
+
+\haskellcode[firstline=4,lastline=11]{src/obs_events.hs}\\
+
+Although this might not look like a big change, it greatly influences the design of our API. We are, in fact, changing our instantiation of the continuation monad to an input type that is not \code{a} anymore, but \code{Event a}. On the other hand, out type variable for Observable is still \code{a}. This is not an issue per se, but it has one big consequence: the flatmap function that we inherit from the continuation monad is not the one that we want to expose from out API anymore. The types differ like so.\\
+
+\haskellcode[firstline=13,lastline=17]{src/obs_events.hs}\\
+
+This has many implications, first of all, we are gonna need to implement flatmap by ourselves.. see todo below...
+
+It has now come the time to move away from an implementation of Observable as a type synonym. We have already seen how the current implementation using \code{Event a} does not allow for a correspondence between \code{>>=} operations; this will only create confusion in the future. The next step is then to define our own observable tybe, which will clearly be really similar to the Continuation monad and subsequently prove that it is itself a monad. 
+
+----------------------------------------------------
+\begin{minted}{haskell}
+newtype Observable a = Observable { subscribe :: Observer a -> IO () } 
+data Observer a = Observer 
+    { onNext       :: a -> IO ()
+    , onError      :: SomeException -> IO ()
+    , onCompleted  :: IO ()
+    }
+\end{minted}
+----------------------------------------------------    
+
+With this implementation we have eliminated the materialisation of the event types. The Observer is now not a single function from \code{Event a -> IO ()} but a collection of 3 continuations that will be used inside the observable depending on the type of the event. It is clear that this implementation of Observable has not changed in functionality from the previous one using the Continuation Monad, it has just dematerialized the 3 types of events in 3 functions which handle them.
+
+The next step is to make Observable a monad
+
+----------------------------------------------------
+\begin{minted}{haskell}
+instance Monad Observable where
+	return a = observable (\obr -> onNext obr a)
+	o >>= f = ...
+\end{minted}
+----------------------------------------------------  
+
+The return function is the exact same as in the continuation monad, with the only difference that we have now 3 continuations to chose from instead of a single one. 
+
+Bind, on the other hand, is completely different from the Cont monad implementation; in this case ... \todo[inline]{finish the discussion}
+
+The only thing left to do now is to prove the monad laws to show that Observable really is a monad.
+
+\haskellcode[firstline=19,lastline=22]{src/obs_events.hs}\\
+
+We mentioned before how the bind from Cont differs from our in the Observable. Below I will show that in this implementation it corresponds to a function lift that ... \todo[inline]{Talk about lift = >>= in Cont.}
+
+By using lift we can transform streams and implement operators...
+
+\todo[inline]{Modify keyboard press example from before to handle errors and termination. Point to later discussion regarding the rx contract, since now we can detect termination and errors but there is no guarantee that nothing will come after we receive them, i.e. that we abide the contract.}
+
+PUT THE CONTRACT HERE????
+
+\section{Schedulers}
+
+Up until now our discussion on push based collections has not mentioned time. This might seem strange, especially when coming from and FRP background, where continuous time and functions are at the foundations of the theory. 
+
+- Elaborate on orthogonality of time.
+- Discuss how rx is synch by itself and how we need to add concurrency in order not to have it blocking. 
+- Discuss the different possible levels of concurrency
+- Discuss how this affects the implementation of operators: levels of safety
+- Discuss how threadpool scheduler breaks monad laws. \todo{Ask Erik about this.}
+
+\section{Subscriptions}
+
+With error handling and termination, our implemnentation starts getting more and more usable. We now want to add a mechanism that will allow us to stop an observable stream from the outside (as opposed to waiting for an onCompleted) whenever we don't require it's data anymore. 
+
+In order to achieve this we will use a new datatype, Subscription. The idea is that the subscribe function will return a Subscription to the user who will later be able to call unsubscribe on it and stop the stream associated to it from producing any more values.
+
+\todo[inline]{Talk about the best effort in canceling work and eventual consistency with the contract.}
+
+A Subscription in itself is nothing more than an IO action to perform once we stop an observable stream. Naturally, to make it usable in a real setting, we are gonna need to augment it more information: first, we will need a way to test whether the subscription is unsubscribed or not. The easiest way to do this is to use mutable state and store a boolean value with every Subscription. Moreover, some operators \todo[inline]{discuss childern subscriptions}
+
+Note that from now on, in order to allow our implementation to be usable, we will make use not only of functional language features, but of imperative ones as well. This will be done in situations in which it makes sense from an understandability point of view. There's no shame in using all our tools and being a purist is not always the best way.
+
+\todo[inline]{Probably better to put what follows somewhere else, right after we leave the theory for example.}
+Note that, even though the Observable's theoretical foundation is strictly functional, the road to make it usable is full of obstacles that are better tackled using imperative features, i.e. state. As much as I personally prefer a functional approach to programming, I will favor the solution that most clearly and easily solves the problem, be that functional of imperative.
+
+\haskellcode[firstline=1,lastline=1]{src/subsciption.hs}\\
+
+Our goal now is to implement a cancellation mechanism that would stop the Observable. This will be achieved by calling a function unsubscribe, which will prevent, from that moment on, any events to be signaled to any subscribed observer.
+
+This is achieved by wrapping the user supplied observer to the subscribe function with an internal one which adds this functionality and forwards all accepted events to the supplied one.
+
+\todo[inline]{the code for safe observer.}
+\haskellcode[firstline=25,lastline=40]{./../rx-formal/src/rx-semantics-subscription.hs}\\
+
+As a design decision, when unsubscribe is called on an observable subscription, the observable sequence will make a best effort attempt to stop all outstanding work. This means that any queued work that has not been started will not start. Any work that is already in progress might still complete as it is not always safe to abort work that is in progress. Results from this work will not be signaled to any previously subscribed observer instances.
+
+
+\todo[inline]{Motivation for children subscriptions: some operators will create inner observables and therefore will need to unsubscribe from them when the outer observable is unsubscribed from.}
+
+--------------------------------------------------\\
+On why using Cont () (StateT Subscription IO) (Event a) wouldn't work: it would be perfect in order to thread Subscriptions throughout execution making it usable inside operators, since the call to the continuation would return a state which would then be sequenced by >>=. This method fails with schedulers, in particular newThread since the state of the action executed on the new thread would be disconnected from the threading mentioned above. The other thread would get a state but it would not know what to do with it and would not have any ways to connect it to the original one passed by the subscribe. Another way is to use mapStateT to map the IO action that will result from the state to an action on the other thread. Again, this method won't work, 
+
+--------------------------------------------------\\
+On the motivation for a Subscription: it is needed so the user can cancel work at any time. This implies that a scheduler is used. If this is not the case the subscription will be returned synchronously after the execution of the whole stream. It will therefore be already unsubscribed and calling unsubscribe will be a NoOp. In the case that we actually use schedulers then we can unsubscribe from anywhere in our program. 
+
+Now the question is the following: can we reproduce the behaviour of unsubscribe with operators so that we can eliminate subscriptions altogether? That is, we can hide them to the outside and use them only inside the stream, we still need them but we don't necessarily need to return them when we subscribe. The behavious can be easily replaced by the use of takeUntil(Observable a) where we pass in a subject that will be signaled when we want to stop the stream. The takeUntil operator fires events from the upstream up until the point in which we signal the subject, then stops the stream and unsubscribes. 
+
+With this approach we seemingly lose one thing, i.e. the ability to specify what happens at unsubscription time; this functionality can simply be regained by a subscribe function that takes the unsubscribe action as a parameter and runs it when the stream is unsubscribed.
+--------------------------------------------------
+
+\section{The Reactive Contract}

@@ -1,0 +1,42 @@
+\let\textcircled=\pgftextcircled
+\chapter*[Introduction]{Introduction}
+\label{chap:intro}
+
+\epigraph{\hspace{4ex}\textit{The cold winds are rising in the North... Brace yourselves, winter is coming.}}{--- George R.R. Martin,\\ \textit{A Game of Thrones}}
+\todo{You know nothing John Snow quote}
+
+ 
+With the evolution of technologies brought in by the new millennium and the exponential growth of Internet-based services targeting millions of users all over the world, the Software Engineers' community has been continuously tested by an ever growing number of challenges related to management of increasingly large amounts of user data\cite{furht2010handbook}. 
+
+This phenomena is commonly referred to as Big Data. A very popular 2001 research report\cite{laney20013d} by analyst Doug Laney, proposes a definition of big data based on its three defining characteristics:
+
+\begin{itemize}
+\item \textit{Volume}: the quantity of data applications have to deal with, ranging from small - e.g. locally maintained Databases - to large - e.g. distributed File Systems replicated among data centers.
+\item \textit{Variety}: the type and structure of data, ranging from classic SQL-structured data sets to more diversified and unstructured ones such as text, images, audio and  video. 
+\item \textit{Velocity}: the speed at which data is generated, establishing the difference between pull-based systems, where data is synchronously pulled by the consumer, and push-based systems, more suited for handling real-time data by asynchronously pushing it to its clients.
+\end{itemize}
+
+Each of these traits directly influences the way programming languages, APIs and databases are designed today. The increasing volume calls for a declarative approach to data handling as opposed to an imperative one, resulting in the developer's focus shifting from how to compute something to what it is to be computed in the first place\cite{fahland2009declarative}. The diversification of data, on the other hand, is the main drive for the research and development of noSQL approaches to data storage. Lastly, the increase in velocity fuels the need for event-driven, push-based models of computation that can better manage the high throughput of incoming data\cite{meijer2012your}. 
+
+In this context, the concept of \textit{reactive programming} has gained much traction in the developer's community as a paradigm well-suited for the development of asynchronous  event-driven applications\cite{bainomugisha2013survey}. Unfortunately, reactive programming has been at the center of much discussion, if not confusion, with regards to its definition, properties and principles that identify it\cite{meijer2014reactive}.
+
+The goal of our work is to shed light on this much discussed topic by providing a formalization of the reactive programming paradigm. We are going to do so by means of a mathematical approach in the derivation of the reactive types. We will then continue with the development of an API which builds upon the previously derived theoretical foundations and discuss how this relates to the already existing, commercial reactive libraries.
+
+\section*{Contributions}
+To the best of our knowledge, we are not aware of any previous work which analyses reactive programming from a mathematical and theoretical perspective.. 
+
+Many attempts have been conducted in order to formalize this concept, some more business-driven than others, such as the Reactive Manifesto, Reactive Streams. None of these precisely defines reactive programming, but in most cases result in a nice document to be presented to a company's management for adoption - lots of buzzwords, not much substance.
+
+\todo[inline]{Write contributions}
+
+\section*{Overview}
+
+Chapter 2 starts with ... bla bla bla
+
+\todo[inline]{Write overview}
+
+\section*{Notation \& Conventions}
+
+In the exposition of our work we will use Haskell as the reference programming language.. because it's close to mathematical notation..
+
+\todo[inline]{Write notation and conventions}

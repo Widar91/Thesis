@@ -1,0 +1,114 @@
+\let\textcircled=\pgftextcircled
+\Chapter{Into the Rabbit Hole}{Deriving the Observable}
+
+\epigraph{\hspace{4ex}\textit{"It was much pleasanter at home," thought poor Alice, "when one wasn't always growing larger and smaller, and being ordered about by mice and rabbits. I almost wish I hadn't gone down the rabbit-hole -- and yet -- and yet -- ..."}}{--- Lewis Carol,\\ \textit{Alice in Wonderland}}
+
+
+In this chapter we are going to derive the \code{Observable} interface starting from its dual counterpart, the \code{Iterable}, which, as we have seen in Chapter \ref{chap:reactiveprogramming}, represents embodies the idea of a pull-based model of computation and is the commonly adopted solution to dealing with synchronous computations resulting in multiple values.
+
+\section{Iterables}
+\label{sec:iterables}
+
+An \code{Iterable} is a programming construct which enables the user to traverse a collection of data, abstracting over the underlying implementation\cite{gamma1995design}.
+
+The interface and semantics of \code{Iterable}s were first introduced by the Gang of Four though their Iterator pattern\cite{gamma1995design}; today's most used programming languages expose the \code{Iterable} as the root interface in standard Collections APIs. 
+
+The \code{Iterable} interface is generally fixed across programming languages, with the exception of naming conventions - C\# and related languages call it IEnumerable - and slight differences in the types, as we can see from the following definitions.\\
+\todo{Should I use a datatype instead of class?}
+
+\haskellcode{src/iterable_interface.hs}\\
+
+Although the essence of the pattern is preserved in both definitions, we claim that the C\# version more clearly and accurately reflects the way side effects play a role in the usage of the interface: \code{moveNext} contains all the side effects of walking down the underlying collection and retrieving the next value while \code{current} can inspect the retrieved value multiple times in a pure way. The Java version, on the other hand, embeds the side effect in the \code{next} function, making it impossible to inspect the current value multiple times. For this reason and without loss of generality, we will make use of the C\# definition - modulo naming conventions - in the reminder of the discussion.\\
+\todo{Mention Subscription here?}
+
+\haskellcode{src/iterable_interface_final.hs}\\
+
+The derivation that follows will require the use of a number mathematical concepts such as categorical duality, continuations, (co)products and (un)currying. We suggest the reader to get familiar with these topics before diving into the derivation. An accessible introduction to each can be found in Appendix \ref{app:a}.
+
+\section{The essence of Iterables}
+
+The first step in deriving the \code{Observable} is to simplify our \code{Iterable} definition to a type that reflects its very essence; we are gonna do this by stripping the interface presented in the previous section of all the unnecessary operational features that only clutter our definition.
+
+Let's start by taking a closer look at the \code{Iterator} interface; we can observe that the definition of the functions \code{moveNext} and \code{current} is equivalent to a single function which returns either a value - analogous to a \code{moveNext} call returning true and a subsequent invocation to \code{current} - or nothing - analogous to a call to \code{moveNext} returning false. 
+
+Before we formalize this observation with a proper type, let us notice another effect that is hidden in the current definition of \code{moveNext} and not made explicit by the its type: the possibility for an exception to be thrown by the function's body. 
+
+By merging these considerations with the notion of coproducts and Haskell's \code{Maybe} type, we obtain the following definition.\\
+
+\haskellcode{src/iterable_coproducts_maybe.hs}\\
+
+The next step is to forget about class instances and express our interfaces as simple types.\\
+
+\haskellcode[firstline=1,lastline=2]{src/iterable_types.hs}\\
+
+Let's now go one step further and simplify our definition even more, with the purpose of understanding the real essence of an Iterable. In order to achieve this, let's forget for a moment about errors and no values returned from an iterator, i.e. let's ignore operational concerns such as exceptions and termination.\\
+
+\haskellcode[firstline=4,lastline=5]{src/iterable_types.hs}\\
+
+An Iterable is simply a function which, when invoked, returns an Iterator and an Iterator is itself a function which returns a computation that will eventually result in a value of type a. In some way, we can think of an Iterator as a getter function, and of an Iterable as a getter of a getter.
+
+Analyze the Iterator, it's covariant and it's a functor.
+
+\section{Observable is the dual of Iterable}
+
+As we noticed before, the way we deal with a single value in an synchronous environment is dual to the asynchronous method, flipping the arrows brings us from a function resulting in a value of type \code{a} to one accepting an \code{a}. 
+
+It seems reasonable now to apply the same concept of duality to the Iterable in order to find a possible solution to our original problem, dealing with a collection of asynchronous values.\\
+
+\haskellcode{src/iter_to_obs.hs}\\
+
+It is straightforward to see how duality plays out in the derivation of the new types.
+
+This dualisation leaves us with an interface which is interesting under many point of views. First of all, to link back to the observation that an Iterable is a getter of a getter, we can observe that the Observable plays exactly the opposite role, that is, a setter of a setter, the Observer. 
+
+This brings us to another interesting observation, the Iterable embodies the idea of pull collections, the Iterable will give us a new Iterator whenever we ask for it and the Iterator, in turn, will provide us with the next value whenever we decide to pull one from it. Dually, the Observable interface embodies the idea of push collections: we push a callback, the Observer, inside the Observable, which, in turn, will push a value into the Observer whenever one becomes available. 
+
+From here we can take two roads, one is to analyze further the type that we obtained and see what it's properties are and what we can understand from it; the second road is to un-simplify its definition and augment it so as to arrive to a usable API for handling asynchronous collections. We will start with the first.
+
+For those who are familiar with functional programming it will not be hard to see how the Observable type resembles a function written in continuation passing style.\\
+
+\haskellcode{src/obs_cont.hs}\\
+
+We can easily observe how an Observable is nothing more than a CPS function where the result type \code{r} is instantiated to \code{IO ()}.
+
+This observation opens up a great deal of mathematics properties and laws that we can prove about observables.
+
+First of all, let's convince ourselves that a CPS function, and therefore an Observable, truly embodies a push based model of computation. The very definition of continuation tells us that a continuation represents the "rest of the computation"; when looking at it from an observable prospective, the continuation, i.e. the observer, is the function that specifies what needs to happen to a value, whenever this becomes available, that is, whenever the observable pushes it to the observer. Since the continuation can be called multiple times, it is easy to see how this structure lets us deal with multiple values that are might come in at different times in the future.
+
+Note how an observable is "paused" until it receives an observer to which it can push the values it produces. This comes precisely from the definition of CPS function, i.e. a suspended computation which, given another function as argument, the continuation, will produce the final result.  
+
+Therefore an observable is a suspended computation that will start producing values once we pass in an observer, the continuation that will specify what happens to a value once it is computed. The observable will call the observer every time it produces a value.
+
+\section{Observables are Continuations}
+
+\todo[inline]{Talk about the interface that we want to get, even a minimal one now and explain how this relates to the cont monad, e.g. subscribe = ContT. Introduce the ContT monad and show the minimal reference implementation.}
+
+Our goal is now to start from this theoretical explanation of a push based collection and build a usable API. In the previous section we observed how and Observable is a particular case of the continuation monad where the result type is a computation which has unit as a result type. The Haskell language provides a monad construct for expressing continuations as well as a monad transformer in order to stack continuations on top of other monads. A monad transformer is exactly what we need in order to express our continuations resulting in IO.\\
+
+\haskellcode[firstline=1,lastline=2]{src/obs_contT.hs}\\
+
+Our API will also need to provide functions to create as well as start the Observable stream.\\
+
+\haskellcode{src/obs_functions.hs}\\
+
+We can already notice how This should come as no surprise after our discussion regarding the connection between Observables and the Continuation monad. Conversely, these equivalences should justify even more the use of this model of computation for reactive programming.
+
+At this point we have all the necessary tools to create and run an Observable\\
+
+\haskellcode{src/create_run.hs}\\
+
+The example above is a toy example, let's try with a more realistic one such that we can show that our basic implementation of rx based on continuations works just as well as a full blown one in terms of handling asynchronous data.\\ 
+
+\todo[inline]{Put the actual demo that listens to keyboard presses. In the example, press 3 times and see that all the events are handled and none are lost.}
+\haskellcode[firstline=13]{src/create_run_demo.hs}\\
+
+\todo[inline]{Elaborate better this part. Ask Erik for input.}
+It is worth noting that rx in itself is not at all async in handling data unless we use schedulers, although it doea handle asynch data. This is a common misconception, even if you have a single thread that doesn't mean you cannot handle async data, actually you are async because the control flow isn't linear. Naturally, the thing is that certain queries (the ones that don't use schedulers) will simply block your single thread and prevent other things from happening.
+
+This demo shows exactly this, even though the processing of the data is synchronous, the data itself, being mouse movements, is inherently async.
+
+At this point in the discussion we have a working implementation of a push based collection purely derived from the underlying theory of duality and continuations. The next step in augmenting out library is to note that continuations are monads and, being the Observable an instance of the continuation monad, it is itself a monad. This observation comes with great benefits, we can get mathematical laws - the monad laws - proven for free for our structure and, from a more practical point of view, we get functions defined for free for the Observable: fmap (from Functor), flatmap and return.
+
+\todo[inline]{Say more on the monad laws, even if they are trivially proved.}
+
+We will soon see how the implementation of these functions will change and move from the standard one the moment we start moving towards a more operational implementation for real world use.
