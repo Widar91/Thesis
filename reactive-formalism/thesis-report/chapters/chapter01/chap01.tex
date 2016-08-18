@@ -4,7 +4,7 @@
 % Description: 
 %
 \let\textcircled=\pgftextcircled
-\chapter{Introduction}
+\chapter*[Introduction]{Introduction}
 \label{chap:intro}
 
 \epigraph{\hspace{4ex}\textit{The cold winds are rising in the North... Brace yourselves, winter is coming.}}{--- George R.R. Martin,\\ \textit{A Game of Thrones}}
@@ -27,27 +27,31 @@ In this context, the concept of \textit{reactive programming} has gained much tr
 
 The goal of our work is to shed light on this much discussed topic by providing a formalization of the reactive programming paradigm. We are going to do so by means of a mathematical approach in the derivation of the reactive types. We will then continue with the development of an API which builds upon the previously derived theoretical foundations and discuss how this relates to the already existing, commercial reactive libraries.
 
-\section{Contributions}
+\section*{Contributions}
 To the best of our knowledge, we are not aware of any previous work which analyses reactive programming from a mathematical and theoretical perspective.. 
 
 Many attempts have been conducted in order to formalize this concept, some more business-driven than others, such as the Reactive Manifesto, Reactive Streams. None of these precisely defines reactive programming, but in most cases result in a nice document to be presented to a company's management for adoption - lots of buzzwords, not much substance.
 
 \todo[inline]{Write contributions}
 
-\section{Overview}
+\section*{Overview}
 
 Chapter 2 starts with ... bla bla bla
 
 \todo[inline]{Write overview}
 
-\section{Notation \& Conventions}
+\section*{Notation \& Conventions}
 
 In the exposition of our work we will use Haskell as the reference programming language.. because it's close to mathematical notation..
 
 \todo[inline]{Write notation and conventions}
 
+\clearpage
+
+
 \let\textcircled=\pgftextcircled
 \chapter{Reactive Programming}
+\label{chap:reactiveprogramming}
 
 \epigraph{\hspace{4ex}\textit{"It was much pleasanter at home," thought poor Alice, "when one wasn't always growing larger and smaller, and being ordered about by mice and rabbits. I almost wish I hadn't gone down the rabbit-hole -- and yet -- and yet -- ..."}}{--- Lewis Carol,\\ \textit{Alice in Wonderland}}
 
@@ -69,6 +73,7 @@ Interactive programs concretize the idea of a pull-based model of computation, w
 Reactive programs, on the contrary, embody the idea of a push-based - or event-driven - model of computation, where the speed at which the program interacts with the environment is determined by the environment rather than the program. In other words, it is now the producer of the data - i.e. the environment - who determines the speed at which events will occur whilst the program's role reduces to that of a silent observer that will react upon receiving events. Standard example of such systems are GUI applications dealing with various events originating from user input - e.g. mouse clicks, keyboard button presses - and programs dealing with stock market, social media or any other kind of asynchronous updates.  
 
 \section{Why Reactive Programming Matters}
+\label{sec:whyrpmatters}
 
 Considering the definition and examples of reactive programs we analyzed in the previous section, let's now try to formalize the class of problems the reactive programming paradigm is specifically well-suited for.
 
@@ -88,13 +93,11 @@ The table below provides a collection of types offered by common programming lan
     %\caption{The four fundamental effects}
 \end{center}
 
-\todo[inline]{Mention inversion of control.}
-
 The first row shows that synchronous functions come in two flavors: classic functions that return a single value of type \code{a} and functions that produce a collection of results of type \code{a}, abstracted through the \code{Iterable a} interface (See section \ref{sec:iterables}). These types of functions embody the standard imperative, pull-based approach to programming, where a call to a function synchronously blocks until the result is produced. 
 
 Moving on to the second row, we encounter \code{Future a}, an interface representing an asynchronous computation that, at a certain point in the future, will result in a value of type \code{a}. Futures are generally created by supplying two callbacks together with the asynchronous computation, one to be executed in case of success and the other one in case of error. 
 
-Programming languages, however, are not as well equipped when it comes to handling asynchronous computations resulting in multiple values. The issue lies in the fact that the program's control flow is dictated by the environment rather than the program itself, making it very hard to model such problems with commonly known control structures, which are optimized for sequential models of computation.
+Programming languages, however, are not as well equipped when it comes to handling asynchronous computations resulting in multiple values. The issue lies in the fact that the program's control flow is dictated by the environment rather than the program itself - i.e. inversion of control -, making it very hard to model such problems with commonly known control structures, which are optimized for sequential models of computation.
 
 This class of problems reflects the definition of reactive programs we analyzed in the previous section, where the environment asynchronously - i.e. at its own speed - pushes multiple events to the program. 
 
@@ -107,49 +110,65 @@ The reactive programming paradigm sets out to provide interfaces and abstraction
 \section{Reactive Programming in the Real World}
 
 Talk about FRP, Reactive Streams, Rx and other stuff. CIte survey paper
+Claim that Observable is dual of Iterator in order to justify the why.
+
+\subsection{Reactive Extensions}
+\subsection{Reactive Streams}
+\subsection{Functional Reactive Programming}
 
 
-\chapter{Into the Rabbit Hole}
+\Chapter{Into the Rabbit Hole}{Deriving the Observable}
 
 \epigraph{\hspace{4ex}\textit{"It was much pleasanter at home," thought poor Alice, "when one wasn't always growing larger and smaller, and being ordered about by mice and rabbits. I almost wish I hadn't gone down the rabbit-hole -- and yet -- and yet -- ..."}}{--- Lewis Carol,\\ \textit{Alice in Wonderland}}
+
+
+In this chapter we are going to derive the \code{Observable} interface starting from its dual counterpart, the \code{Iterable}, which, as we have seen in Chapter \ref{chap:reactiveprogramming}, represents embodies the idea of a pull-based model of computation and is the commonly adopted solution to dealing with synchronous computations resulting in multiple values.
 
 \section{Iterables}
 \label{sec:iterables}
 
+An \code{Iterable} is a programming construct which enables the user to traverse a collection of data, abstracting over the underlying implementation\cite{gamma1995design}.
 
-We begin by introducing the concept of \code{Iterable}, made famous by the Gang of Four pattern of the same name and widely adopted by most recent programming languages. 
+The interface and semantics of \code{Iterable}s were first introduced by the Gang of Four though their Iterator pattern\cite{gamma1995design}; today's most used programming languages expose the \code{Iterable} as the root interface in standard Collections APIs. 
 
-An Iterable is a programming structure which enables the user to traverse a collection of data, abstracting over the underlying implementation.
-
-The interface and semantics of Iterables are fixed across programming languages.\\
-
-\todo[inline]{Add C\# version}
+The \code{Iterable} interface is generally fixed across programming languages, with the exception of naming conventions - C\# and related languages call it IEnumerable - and slight differences in the types, as we can see from the following definitions.\\
+\todo{Should I use a datatype instead of class?}
 
 \haskellcode{chapters/chapter01/src/iterable_interface.hs}\\
 
-Note that different programming languages might expose slightly different interfaces for the Iterator construct. These differences  affect the way the API is used by programmes, but do not affect the essence of the Iterator pattern and therefore are not relevant. For this reason and without loss of generality, we will make use of the Java-like definition of Iterator in the reminder of the discussion.
+Although the essence of the pattern is preserved in both definitions, we claim that the C\# version more clearly and accurately reflects the way side effects play a role in the usage of the interface: \code{moveNext} contains all the side effects of walking down the underlying collection and retrieving the next value while \code{current} can inspect the retrieved value multiple times in a pure way. The Java version, on the other hand, embeds the side effect in the \code{next} function, making it impossible to inspect the current value multiple times. For this reason and without loss of generality, we will make use of the C\# definition - modulo naming conventions - in the reminder of the discussion.\\
+\todo{Mention Subscription here?}
 
-We will now make use of a few mathematical concepts in order to explore the design space around collections of asynchronous values: duality, continuations and CPS, products and coproducts and lastly currying and uncurrying. See Appendix A for a quick introduction to these concepts.
+\haskellcode{chapters/chapter01/src/iterable_interface_final.hs}\\
 
-Let's start by stripping down the Iterable interface of all the unnecessary API/imperative design features so that we can derive it's essence and easily reason about it's properties.	
+The derivation that follows will require the use of a number mathematical concepts such as categorical duality, continuations, (co)products and (un)currying. We suggest the reader to get familiar with these topics before diving into the derivation. An accessible introduction to each can be found in Appendix \ref{app:a}.
 
-The first step is simplifying the Iterator interface: when we take a close look, we can easily see that an Iterator is nothing but a function which returns either a value - when hasNext returns true and next is called - or nothing - when hasNext returns false. Additionally, and Iterator can also throw an exception in the case that next is called when the underlying collection has been exhausted, something that was not explicit in the C\# definition.
+\section{The essence of Iterables}
 
-Merging these consideration with the notion of coproducts and the maybe types, we obtain the following definition of Iterable.\\
+The first step in deriving the \code{Observable} is to simplify our \code{Iterable} definition to a type that reflects its very essence; we are gonna do this by stripping the interface presented in the previous section of all the unnecessary operational features that only clutter our definition.
+
+Let's start by taking a closer look at the \code{Iterator} interface; we can observe that the definition of the functions \code{moveNext} and \code{current} is equivalent to a single function which returns either a value - analogous to a \code{moveNext} call returning true and a subsequent invocation to \code{current} - or nothing - analogous to a call to \code{moveNext} returning false. 
+
+Before we formalize this observation with a proper type, let us notice another effect that is hidden in the current definition of \code{moveNext} and not made explicit by the its type: the possibility for an exception to be thrown by the function's body. 
+
+By merging these considerations with the notion of coproducts and Haskell's \code{Maybe} type, we obtain the following definition.\\
 
 \haskellcode{chapters/chapter01/src/iterable_coproducts_maybe.hs}\\
 
-Note how the moveNext function still produces an \code{IO} computation.
+The next step is to forget about class instances and express our interfaces as simple types.\\
+
+\haskellcode[firstline=1,lastline=2]{chapters/chapter01/src/iterable_types.hs}\\
 
 Let's now go one step further and simplify our definition even more, with the purpose of understanding the real essence of an Iterable. In order to achieve this, let's forget for a moment about errors and no values returned from an iterator, i.e. let's ignore operational concerns such as exceptions and termination.\\
 
-\haskellcode{chapters/chapter01/src/iterable_types.hs}\\
+\haskellcode[firstline=4,lastline=5]{chapters/chapter01/src/iterable_types.hs}\\
 
 An Iterable is simply a function which, when invoked, returns an Iterator and an Iterator is itself a function which returns a computation that will eventually result in a value of type a. In some way, we can think of an Iterator as a getter function, and of an Iterable as a getter of a getter.
 
+Analyze the Iterator, it's covariant and it's a functor.
+
 %=======
-\section{Into the rabbit hole: Deriving the Observable}
-\label{sec:sec02}
+\section{Observable is the dual of Iterable}
 
 As we noticed before, the way we deal with a single value in an synchronous environment is dual to the asynchronous method, flipping the arrows brings us from a function resulting in a value of type \code{a} to one accepting an \code{a}. 
 
@@ -216,7 +235,7 @@ At this point in the discussion we have a working implementation of a push based
 We will soon see how the implementation of these functions will change and move from the standard one the moment we start moving towards a more operational implementation for real world use.
 
 %=======
-\chapter{Out of the rabbit hole: Towards a usable API}
+\Chapter{Out of the rabbit hole}{Towards a usable API}
 
 
 \todo[inline]{Start from the minimal reference implementation, add exceptions and termination, explain how flatmap changes and lastly add subscription and talk about cancellation and the conctract.}
@@ -226,8 +245,7 @@ Up until now we have analyzed the essence of the Observable, leaving out the ope
 Remember how, at the beginning of our discussion, we greatly simplified the Iterable interface in order to derive a type that represents the essence of an Iterable. We later applied the duality principle from category theory in order to derive the Observable. Now, we want to walk the semplification path backwards and, step by step, re-introduce all that we simplified before in order to arrive to a usable API.
 
 %=======
-\subsection{Adding Termination and Error handling}
-\label{subsec:subsec01}
+\section{Termination and Error Handling}
 
 
 The first thing we want to re-introduce is handling exceptions and termination of a stream. Where an Iterable can return a value, terminate or throw an exception when we ask for a value, and Observable, being it's dual, can produce one or more values, terminate or throw an exception when it is subscribed to. 
@@ -290,8 +308,8 @@ By using lift we can transform streams and implement operators...
 PUT THE CONTRACT HERE????
 
 %=======
-\subsection{Adding Schedulers}
-\label{subsec:subsec02}
+\section{Schedulers}
+
 
 Up until now our discussion on push based collections has not mentioned time. This might seem strange, especially when coming from and FRP background, where continuous time and functions are at the foundations of the theory. 
 
@@ -301,8 +319,8 @@ Up until now our discussion on push based collections has not mentioned time. Th
 - Discuss how this affects the implementation of operators: levels of safety
 - Discuss how threadpool scheduler breaks monad laws. \todo{Ask Erik about this.}
 %=======
-\subsection{Adding Subscriptions}
-\label{subsec:subsec02}
+\section{Subscriptions}
+
 
 With error handling and termination, our implemnentation starts getting more and more usable. We now want to add a mechanism that will allow us to stop an observable stream from the outside (as opposed to waiting for an onCompleted) whenever we don't require it's data anymore. 
 

@@ -221,12 +221,11 @@
 bgcolor=mintedbackground,
 linenos=true,
 numberblanklines=true,
-numbersep=12pt,
-numbersep=5pt,
+numbersep=10pt,
 gobble=0,
-frame=leftline,
+frame=lines,
 framerule=0.4pt,
-framesep=2mm,
+framesep=4mm,
 funcnamehighlighting=true,
 tabsize=4,
 obeytabs=false,
@@ -358,6 +357,12 @@ texcl=false
 \hyphenation{para-me-ters}
 \hyphenation{sol-va-bi-li-ty}
 %
+
+%chapter subtitle
+\newcommand\Chapter[2]{
+  \chapter[#1]{#1:\\\Large\itshape#2}
+}
+
 %
 \begin{document}
 % UoB guidlines:

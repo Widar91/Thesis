@@ -1,12 +1,17 @@
+-- Java Iterable
 class Iterable a where
     getIterator :: () -> IO (Iterator a)
 
--- Java-like Iterator
 class Iterator a where
-    next    :: () -> IO a  
     hasNext :: () -> Bool
+    next    :: () -> IO a  
 
--- C#-like Iterator
-class Iterator a where
+---------------------------------------------
+
+-- C# IEnumerable
+class IEnumerable a where
+    getEnumerator :: () -> IO (IEnumerator a)
+
+class IEnumerator a where
+    moveNext :: () -> IO Bool 
     current  :: () -> a  
-    moveNext :: () -> IO Bool   
