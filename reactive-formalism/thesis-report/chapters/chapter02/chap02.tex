@@ -23,7 +23,7 @@ Although the essence of the pattern is preserved in both definitions, we claim t
 
 \haskellcode{src/iterable_interface_final.hs}\\
 
-The derivation that follows will require the use of a number mathematical concepts such as categorical duality, continuations, (co)products and (un)currying. We suggest the reader to get familiar with these topics before diving into the derivation. An accessible introduction to each can be found in Appendix \ref{app:a}.
+The derivation that follows will require the use of a number mathematical concepts such as categorical duality, continuations, (co)products, (un)currying, covariance, contravariance and functors. We suggest the reader to get familiar with these topics before diving into the derivation. An accessible introduction to each can be found in Appendix \ref{app:a}.
 
 \section{The essence of Iterables}
 
@@ -31,23 +31,38 @@ The first step in deriving the \code{Observable} is to simplify our \code{Iterab
 
 Let's start by taking a closer look at the \code{Iterator} interface; we can observe that the definition of the functions \code{moveNext} and \code{current} is equivalent to a single function which returns either a value - analogous to a \code{moveNext} call returning true and a subsequent invocation to \code{current} - or nothing - analogous to a call to \code{moveNext} returning false. 
 
-Before we formalize this observation with a proper type, let us notice another effect that is hidden in the current definition of \code{moveNext} and not made explicit by the its type: the possibility for an exception to be thrown by the function's body. 
+Before we formalize this observation with a proper type, let us notice another effect that is hidden in the current definition of \code{moveNext}, but not made explicit by the its type: the possibility for an exception to be thrown by the function's body. 
 
-By merging these considerations with the notion of coproducts and Haskell's \code{Maybe} type, we obtain the following definition.\\
+By merging these considerations with the notion of coproducts and Haskell's \code{Either} and \code{Maybe} type, we obtain the following definition.\\
 
 \haskellcode{src/iterable_coproducts_maybe.hs}\\
+
+Note how, theoretically, \code{getIterator} could also throw an exception. We assume here, without loss of generality, that the function will never throw and will always be able to return an \code{Iterator} instance.
 
 The next step is to forget about class instances and express our interfaces as simple types.\\
 
 \haskellcode[firstline=1,lastline=2]{src/iterable_types.hs}\\
 
-Let's now go one step further and simplify our definition even more, with the purpose of understanding the real essence of an Iterable. In order to achieve this, let's forget for a moment about errors and no values returned from an iterator, i.e. let's ignore operational concerns such as exceptions and termination.\\
+At this point, we want to put aside the operational concerns regarding exceptions and termination and assume the \code{Iterator} function will always return a value of type \code{a}.
 
 \haskellcode[firstline=4,lastline=5]{src/iterable_types.hs}\\
 
-An Iterable is simply a function which, when invoked, returns an Iterator and an Iterator is itself a function which returns a computation that will eventually result in a value of type a. In some way, we can think of an Iterator as a getter function, and of an Iterable as a getter of a getter.
+We have now reached a point where no simplification is possible anymore. The obtained types reflect the essence of the Iterator patter: an \code{Iterable} is simply a function which, when invoked, produces an \code{Iterator} and an \code{Iterator} is itself a function producing a value of type \code{a} as a side effect. 
 
-Analyze the Iterator, it's covariant and it's a functor.
+\todo{Reformulate this part better, ask Erik for advice.}
+These types present some interesting properties; let's start by analyzing the \code{Iterator}, a function which, given nothing, will produce a value of type \code{a}. This type should sound familiar to the reader acquainted with object oriented programming as it precisely describes the notion of a getter function, i.e. a lazy producer of values. When looking at the relation between the \code{Iterator} type and its base component, \code{a}, we can observe how they are bound by a covariance relation:
+\todo{vending machine example?}
+\begin{displaymath}
+\frac{A <: B}{() \rightarrow A <: () \rightarrow B} 
+\end{displaymath}
+
+The \code{Iterable}, on the other hand, is nothing more than a getter of another getter, the \code{Iterator} and therefore abides by the covariance relation as well.
+
+To formally prove this intuition of a covariant relation, we instantiate the \code{Iterable}/\code{Iterator} types to a covariant \code{Functor}.\\
+
+\haskellcode{src/iterable_functor.hs}\\
+
+We will see in the next section how these concepts are relevant in expressing the duality between Iterables and Observables.
 
 \section{Observable is the dual of Iterable}
 
