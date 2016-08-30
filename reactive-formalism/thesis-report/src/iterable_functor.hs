@@ -11,15 +11,14 @@ import Control.Monad
     fmapi         f           ia           = () -> f (ia ())
 
     fmapii :: (a -> b) -> (() -> () -> a) -> () -> () -> b
-    fmapii        f          iia           = () -> fmapi f (iia ())
+    fmapii        f           iia          = () -> fmapi f (iia ())
 -}
 
-newtype Iterable a = Iterable { getIterator :: () -> IO (Iterator a) } 
 newtype Iterator a = Iterator { runIterator :: () -> IO a } 
+newtype Iterable a = Iterable { getIterator :: () -> IO (Iterator a) } 
 
 instance Functor Iterator where
-    fmap f ia = Iterator $ \_ -> liftM f (runIterator ia ()) 
+    fmap f ia  = Iterator $ \_ -> liftM f (runIterator ia ()) 
 
 instance Functor Iterable where
-    fmap f ia = Iterable $ \_ -> liftM (fmap f) (getIterator ia ()) 
-
+    fmap f iia = Iterable $ \_ -> liftM (fmap f) (getIterator iia ())

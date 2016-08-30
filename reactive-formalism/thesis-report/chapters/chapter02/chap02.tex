@@ -25,7 +25,7 @@ Although the essence of the pattern is preserved in both definitions, we claim t
 
 The derivation that follows will require the use of a number mathematical concepts such as categorical duality, continuations, (co)products, (un)currying, covariance, contravariance and functors. We suggest the reader to get familiar with these topics before diving into the derivation. An accessible introduction to each can be found in Appendix \ref{app:a}.
 
-\section{The essence of Iterables}
+\section{The Essence of Iterables}
 
 The first step in deriving the \code{Observable} is to simplify our \code{Iterable} definition to a type that reflects its very essence; we are gonna do this by stripping the interface presented in the previous section of all the unnecessary operational features that only clutter our definition.
 
@@ -60,59 +60,62 @@ The \code{Iterable}, on the other hand, is nothing more than a getter of another
 
 To formally prove this intuition of a covariant relation, we instantiate the \code{Iterable}/\code{Iterator} types to a covariant \code{Functor}.\\
 
-\haskellcode{src/iterable_functor.hs}\\
+\haskellcode[firstline=3]{src/iterable_functor.hs}\\
 
-We will see in the next section how these concepts are relevant in expressing the duality between Iterables and Observables.
+We will see in the next section how these concepts are relevant in expressing and motivating the relevance of the duality between Iterables and Observables.
 
-\section{Observable is the dual of Iterable}
+\section{Applying Duality}
 
-As we noticed before, the way we deal with a single value in an synchronous environment is dual to the asynchronous method, flipping the arrows brings us from a function resulting in a value of type \code{a} to one accepting an \code{a}. 
+By now, the reader should be somehow familiar with the concept of duality, as it has appeared many times throughout our discussion, in concepts such as pull and push models of computation or interactive and reactive programs. Duality is, in fact, a very important general theme that has manifestations in almost every area of mathematics\cite{gowers2010princeton} (See Appendice \ref{app:a} for an introductory discussion on the topic). 
 
-It seems reasonable now to apply the same concept of duality to the Iterable in order to find a possible solution to our original problem, dealing with a collection of asynchronous values.\\
+Starting from the fact that the \code{Iterable} interface embodies the idea of interactive programming, let's use the principle of duality to derive the \code{Observable} interface and see how it relates to the concept of reactive programming. In practice, this translates to the simple task of flipping the function arrows in the \code{Iterable} interface, taking us from a function resulting in a value of type \code{a} to one accepting an \code{a}.\\
 
 \haskellcode{src/iter_to_obs.hs}\\
 
-It is straightforward to see how duality plays out in the derivation of the new types.
+Not how the side effects are bound to function application rather than values, hence their flipped position in the \code{Observable} type.
 
-This dualisation leaves us with an interface which is interesting under many point of views. First of all, to link back to the observation that an Iterable is a getter of a getter, we can observe that the Observable plays exactly the opposite role, that is, a setter of a setter, the Observer. 
-
-This brings us to another interesting observation, the Iterable embodies the idea of pull collections, the Iterable will give us a new Iterator whenever we ask for it and the Iterator, in turn, will provide us with the next value whenever we decide to pull one from it. Dually, the Observable interface embodies the idea of push collections: we push a callback, the Observer, inside the Observable, which, in turn, will push a value into the Observer whenever one becomes available. 
-
-From here we can take two roads, one is to analyze further the type that we obtained and see what it's properties are and what we can understand from it; the second road is to un-simplify its definition and augment it so as to arrive to a usable API for handling asynchronous collections. We will start with the first.
-
-For those who are familiar with functional programming it will not be hard to see how the Observable type resembles a function written in continuation passing style.\\
+The reader acquainted with functional programming will easily see the resemblance between the \code{Observable} type and a CPS function (See Appendice \ref{app:a}).\\
 
 \haskellcode{src/obs_cont.hs}\\
 
-We can easily observe how an Observable is nothing more than a CPS function where the result type \code{r} is instantiated to \code{IO ()}.
+It is clear how an \code{Observable} is nothing more than a CPS function where the result type \code{r} is instantiated to \code{IO ()}. To convince ourselves of this equivalence, let's think about the definition of a CPS function, i.e. a suspended computation which, given another function - the continuation - as argument, will produce its final result. This definition suits perfectly the idea behind \code{Observable} discussed in Section \ref{subsec:rx}: a function which will do nothing - i.e. is suspended - until it is subscribed to by an \code{Observer}.
 
-This observation opens up a great deal of mathematics properties and laws that we can prove about observables.
+A continuation, on the other hand, represents the future of the computation, a function from an intermediate result to the final result\cite{newbern-monads}; in the context of \code{Observable}s, the continuation represents the \code{Observer}, a function specifying what will happen to a value produced by the \code{Observable}, whenever it will become available, that is, whenever it will be pushed into the \code{Observer}. Since a continuation can be called multiple times within the surrounding CPS context, it is easy to see how this mathematical concept allows us to easily deal with multiple values produced at different times in the future.
 
-First of all, let's convince ourselves that a CPS function, and therefore an Observable, truly embodies a push based model of computation. The very definition of continuation tells us that a continuation represents the "rest of the computation"; when looking at it from an observable prospective, the continuation, i.e. the observer, is the function that specifies what needs to happen to a value, whenever this becomes available, that is, whenever the observable pushes it to the observer. Since the continuation can be called multiple times, it is easy to see how this structure lets us deal with multiple values that are might come in at different times in the future.
+In the previous section we have discussed many properties associated with \code{Iterable}s. Let's analyze now how these properties translate under dualisation and how they affect our new derived interface, the \code{Observable}.
 
-Note how an observable is "paused" until it receives an observer to which it can push the values it produces. This comes precisely from the definition of CPS function, i.e. a suspended computation which, given another function as argument, the continuation, will produce the final result.  
+First, moving from the observation that an \code{Iterable} is a getter of a getter, we can observe that the \code{Observable} plays exactly the opposite role, that is, a setter of a setter. The type \code{Observer :: a -> IO ()} represents, in fact, the essence of a setter function, whereas the \code{Observable} consists in nothing more than the simple task of applying the observer function to itself, producing a setter of setters. 
 
-Therefore an observable is a suspended computation that will start producing values once we pass in an observer, the continuation that will specify what happens to a value once it is computed. The observable will call the observer every time it produces a value.
+\todo{Probably will need to riformulate this.}
+While the discussion about \code{Iterable}'s covariance was quite intuitive, things get a little bit more complicated when analyzing \code{Observable}s. Let's start by informally introducing the notion of positivity and negativity of types: we can interpret a function of type \code{f :: a -> b} as a way for us to produce a value of type \code{b}. In this context, \code{b} is considered to be positive with respect to the type \code{a -> b}. On the other hand, in order to apply the function, we are going to need a value of type \code{a}, which we will need to get from somewhere else; \code{a} is therefore considered to be negative w.r.t. the function type, as the function introduces a need for this value in order to produce a result. The point of this distinction is that positive type variables introduce a covariant relation between base and function type whereas negative type variables introduce a contravariant relation.
+
+Analyzing \code{Iterable} within this framework is easy, the \code{Iterator} function contains a single type parameter found in a positive position, therefore resulting in a covariant relation; being the \code{Iterable} the result of applying the \code{Iterator} function to itself, we again result in a covariant relation w.r.t. the type parameter \code{a}.
+
+The \code{Observer} function, on the contrary, introduces a need for a value of type \code{a}, resulting in a contravariant relation w.r.t. \code{a}. Again, the \code{Observable} function is the result of applying \code{Observer} to itself; surprisingly, this results in \code{a} being in a positive position. The intuition is easily understood by thinking about the rules of arithmetic multiplication: \code{a} is in negative position w.r.t. the \code{Observer} function, whereas the \code{Observer} is in negative position w.r.t. the \code{Observable}. This leads to \code{a} being negated twice, ultimately resulting in a positive position within the \code{Observable} function. Before we formalize this intuition, let's convince ourselves that \code{Observable}s effectively produces a value of type \code{a} by looking at an example:\\
+
+\haskellcode{src/polarity.hs}\\
+
+It is clear from this implementation that \code{randomValueObs} indeed produces a value of type \code{Int}, whereas the \code{Observer} introduces a need for such value in order to be applied. For more details on the positivity and negativity of functions and type variables, see \cite{pos-neg}\cite{pos-neg2}.
+
+Just as we did with \code{Iterable} we can formally prove the covariant and contravariant relations by instantiating \code{Observable} to a \code{Functor} instance and \code{Observer} to a Cofunctor one (Haskell uses the name \code{Contravariant} instead).\\
+
+\haskellcode{src/observable_functor.hs}
 
 \section{Observables are Continuations}
 
 \todo[inline]{Talk about the interface that we want to get, even a minimal one now and explain how this relates to the cont monad, e.g. subscribe = ContT. Introduce the ContT monad and show the minimal reference implementation.}
 
-Our goal is now to start from this theoretical explanation of a push based collection and build a usable API. In the previous section we observed how and Observable is a particular case of the continuation monad where the result type is a computation which has unit as a result type. The Haskell language provides a monad construct for expressing continuations as well as a monad transformer in order to stack continuations on top of other monads. A monad transformer is exactly what we need in order to express our continuations resulting in IO.\\
+In the last section we mentioned how the \code{Observable} interface is equivalent to a CPS function. We are now going to formally prove this claim by providing a basic implementation of \code{Observable} as a type alias of Haskell's continuation monad. The Haskell language provides a monad construct for expressing continuations, as well as a monad transformer which allows the user to stack the functionality of continuations on top of other monads. A monad transformer is exactly what we need in order to express our \code{Observable} function producing a result in the IO monad.\\
 
-\haskellcode[firstline=1,lastline=2]{src/obs_contT.hs}\\
+\haskellcode[firstline=3,lastline=14]{src/observable_contT.hs}\\
 
-Our API will also need to provide functions to create as well as start the Observable stream.\\
+At this point we have all the necessary tools to create and run an \code{Observable}.\\
 
-\haskellcode{src/obs_functions.hs}\\
+\haskellcode[firstline=16]{src/observable_contT.hs}\\
 
-We can already notice how This should come as no surprise after our discussion regarding the connection between Observables and the Continuation monad. Conversely, these equivalences should justify even more the use of this model of computation for reactive programming.
+Even though the above is a toy example, it shows how 
 
-At this point we have all the necessary tools to create and run an Observable\\
-
-\haskellcode{src/create_run.hs}\\
-
-The example above is a toy example, let's try with a more realistic one such that we can show that our basic implementation of rx based on continuations works just as well as a full blown one in terms of handling asynchronous data.\\ 
+let's try with a more realistic one such that we can show that our basic implementation of rx based on continuations works just as well as a full blown one in terms of handling asynchronous data.\\ 
 
 \todo[inline]{Put the actual demo that listens to keyboard presses. In the example, press 3 times and see that all the events are handled and none are lost.}
 \haskellcode[firstline=13]{src/create_run_demo.hs}\\

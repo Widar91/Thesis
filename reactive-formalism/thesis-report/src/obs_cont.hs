@@ -1,2 +1,2 @@
-cont       :: (a -> r) -> r
+cont       :: (a -> r    ) -> r
 observable :: (a -> IO ()) -> IO () 
