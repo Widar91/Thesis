@@ -103,8 +103,6 @@ Just as we did with \code{Iterable} we can formally prove the covariant and cont
 
 \section{Observables are Continuations}
 
-\todo[inline]{Talk about the interface that we want to get, even a minimal one now and explain how this relates to the cont monad, e.g. subscribe = ContT. Introduce the ContT monad and show the minimal reference implementation.}
-
 In the last section we mentioned how the \code{Observable} interface is equivalent to a CPS function. We are now going to formally prove this claim by providing a basic implementation of \code{Observable} as a type alias of Haskell's continuation monad. The Haskell language provides a monad construct for expressing continuations, as well as a monad transformer which allows the user to stack the functionality of continuations on top of other monads. A monad transformer is exactly what we need in order to express our \code{Observable} function producing a result in the IO monad.\\
 
 \haskellcode[firstline=3,lastline=14]{src/observable_contT.hs}\\
@@ -113,20 +111,13 @@ At this point we have all the necessary tools to create and run an \code{Observa
 
 \haskellcode[firstline=16]{src/observable_contT.hs}\\
 
-Even though the above is a toy example, it shows how 
+Notice how an observable only pushes values once subscribed to and acts as a suspended computation otherwise. 
 
-let's try with a more realistic one such that we can show that our basic implementation of rx based on continuations works just as well as a full blown one in terms of handling asynchronous data.\\ 
+The code abobe, being a toy example fails to show some fundamental properties associated with this new interface; in particular, it fails to show how \code{Observable}s can actually handle asynchronous sources of data. The following snippet of code contains a more realistic and meaningful example of an \code{Observable} handling keyboard presses, asynchronous events by nature. It is worth noticing how our basic implementation of \code{Observable} based on continuations works just as well as a full blown one in terms of its core capability of handling asynchronous data.\\ 
 
 \todo[inline]{Put the actual demo that listens to keyboard presses. In the example, press 3 times and see that all the events are handled and none are lost.}
 \haskellcode[firstline=13]{src/create_run_demo.hs}\\
 
-\todo[inline]{Elaborate better this part. Ask Erik for input.}
-It is worth noting that rx in itself is not at all async in handling data unless we use schedulers, although it doea handle asynch data. This is a common misconception, even if you have a single thread that doesn't mean you cannot handle async data, actually you are async because the control flow isn't linear. Naturally, the thing is that certain queries (the ones that don't use schedulers) will simply block your single thread and prevent other things from happening.
+This example brings us to the following observation: \code{Observable}s are capable of handling asynchronous data sources, yet the means by which the data is handled are not asynchronous by default. This is a common misconception and source of much confusion among the community: an \code{Observable}, by default, synchronously handles it's incoming data, blocking the next incoming events whilst processing the current one. This behavior is not fixed though: as we will see in Chapter \ref{chap:outoftherabbithole}, it is possible to make use of \code{Scheduler}s in order to alter the control flow of the data processing and dispatch the work to other threads.
 
-This demo shows exactly this, even though the processing of the data is synchronous, the data itself, being mouse movements, is inherently async.
-
-At this point in the discussion we have a working implementation of a push based collection purely derived from the underlying theory of duality and continuations. The next step in augmenting out library is to note that continuations are monads and, being the Observable an instance of the continuation monad, it is itself a monad. This observation comes with great benefits, we can get mathematical laws - the monad laws - proven for free for our structure and, from a more practical point of view, we get functions defined for free for the Observable: fmap (from Functor), flatmap and return.
-
-\todo[inline]{Say more on the monad laws, even if they are trivially proved.}
-
-We will soon see how the implementation of these functions will change and move from the standard one the moment we start moving towards a more operational implementation for real world use.
+At this point in the discussion we have arrived to a working implementation of a push based collection purely derived from mathematical and categorical concepts such as duality and continuations. In the next Chapter we will take the necessary steps to transform this basic implementation into a full blown API that can be used in real world applications.

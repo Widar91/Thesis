@@ -2,12 +2,11 @@
 \chapter{Reactive Programming}
 \label{chap:reactiveprogramming}
 
-\epigraph{\hspace{4ex}\textit{"It was much pleasanter at home," thought poor Alice, "when one wasn't always growing larger and smaller, and being ordered about by mice and rabbits. I almost wish I hadn't gone down the rabbit-hole -- and yet -- and yet -- ..."}}{--- Lewis Carol,\\ \textit{Alice in Wonderland}}
+\epigraph{\hspace{4ex}\textit{The cold winds are rising in the North... Brace yourselves, winter is coming.}}{--- George R.R. Martin,\\ \textit{A Game of Thrones}}
 
 
-In this chapter ... bla bla bla
-
-\todo[inline]{Write chapter introduction}
+\todo[inline]{Review this, especially the last sentence with the claim.}
+In this chapter we are going to introduce the concept of reactive programming and motivate it's importance and relevance with regards to modern applications and the type of problems developers have to face nowadays. Next, we are going to introduce the most popular commercial libraries that claim to solve the reactive problem, with the purpose of giving the reader some context for our discussion. We will conclude the chapter by claiming that \textit{Reactive Extensions} is the only library that truly embodies the essence of reactive programming, setting the basis for the remainder of the discussion in this thesis.
 
 \section{The Essence of Reactive Programs}
 
@@ -63,5 +62,11 @@ Claim that Observable is dual of Iterator in order to justify the why.
 
 \subsection{Reactive Extensions}
 \label{subsec:rx}
+
 \subsection{Reactive Streams}
+Try to define itself as reactive programming, mathematics prove the claim wrong, they implement asynchronous iterables. This does not make them useless, yet they are not a good solution for the problem we are trying to solve.
+
+\todo[inline]{Probably put the derivation in the appendix, it's not really the focus, I guess.}
+
 \subsection{Functional Reactive Programming}
+Much researched topic, beautiful in theory, yet based on continuous time, un-achievable with computers where time is inherently discrete. Connel Elliot, the inventor of FRP, says that commercial implementations are far from the original theory and do not really represent the essence of FRP
