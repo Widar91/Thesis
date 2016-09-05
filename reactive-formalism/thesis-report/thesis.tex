@@ -217,6 +217,42 @@
 \definecolor{mintedbackground}{rgb}{0.95,0.95,0.95}
 \newcommand{\code}[1]{\colorbox{mintedbackground}{\texttt{#1}}}
 
+\newcommand{\hminted}{\begin{minted}[
+bgcolor=mintedbackground,
+numberblanklines=true,
+numbersep=10pt,
+gobble=0,
+frame=lines,
+framerule=0.4pt,
+framesep=4mm,
+funcnamehighlighting=false,
+tabsize=4,
+obeytabs=false,
+mathescape=false
+samepage=false, %with this setting you can force the list to appear on the same page
+showspaces=false,
+showtabs =false,
+texcl=false
+]{haskell}}
+
+\newcommand{\hmint}[1]{\mint[
+bgcolor=mintedbackground,
+numberblanklines=true,
+numbersep=10pt,
+gobble=0,
+frame=lines,
+framerule=0.4pt,
+framesep=4mm,
+funcnamehighlighting=false,
+tabsize=4,
+obeytabs=false,
+mathescape=false
+samepage=false, %with this setting you can force the list to appear on the same page
+showspaces=false,
+showtabs =false,
+texcl=false
+]{haskell}#1}
+
 \newmintedfile[haskellcode]{haskell}{
 bgcolor=mintedbackground,
 linenos=true,

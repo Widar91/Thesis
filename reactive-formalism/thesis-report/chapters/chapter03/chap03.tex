@@ -7,9 +7,30 @@
 
 \todo[inline]{Start from the minimal reference implementation, add exceptions and termination, explain how flatmap changes and lastly add subscription and talk about cancellation and the conctract.}
 
-Up until now we have analyzed the essence of the Observable, leaving out the operational concerns that would come up when our goal is to design a usable API. Now we will slowly and step by step re-introduce these concerns in order to go from a theoretical definition of Observables to a more operational and therefore usable one.
+Last Chapter we focused our analysis on the essence of the \code{Observable} interface, setting aside the many operational concerns that would come up when trying to implement these concepts into a usable, commercial API. In this Chapter we are going to adopt a step-by step approach that will guide us from our theoretical definition of \code{Observable} to a more concrete and usable one.
 
-Remember how, at the beginning of our discussion, we greatly simplified the Iterable interface in order to derive a type that represents the essence of an Iterable. We later applied the duality principle from category theory in order to derive the Observable. Now, we want to walk the semplification path backwards and, step by step, re-introduce all that we simplified before in order to arrive to a usable API.
+When discussing the \code{Iterable}, we progressively simplified the starting interface in order to derive a type which would represent its essence. We later applied the notion of duality from category theory in order to derive the \code{Observable} interface. We are now going to walk the simplification path backwards and re-introduce the operational components  we set aside before.
+
+The following outlines the chapter and helps clarifying the steps we will undertake in the remainder of our discussion: first, think back to Section \ref{sec:applyingduality}, when we compared \code{Observable} to a setter of setters, the result of applying the \code{Observer} function to itself. Starting from this notion let's define a function \code{(!)}, representing an \code{Observer}:\todo{Should I make them datatype?}
+
+\hmint |!a :: a -> IO () |
+
+When we apply the function to itself we obtain the \code{Observable}, which, as we saw previously, has the same signature and can be implemented by the continuation monad.
+
+\hmint |!!a :: (a -> IO ()) -> IO () |
+
+next, we are going to define two new functions, \code{(?)}, representing a continuation that can deal with termination and errors as inputs, and \code{(\%)}, a function handing over a \code{Subscription} which will be used to implement premature stream termination.
+
+\hminted
+?a :: Either Error (Maybe a) -> IO () -- error handling
+%a :: a -> IO Subscription            -- stream subscription
+\end{minted}
+
+In this chapter we are going to modify from our initial continuation-based definition of \code{Observable} by plugging in these two functions, obtaining the following:
+
+\hmint |%?a :: (Either Error (Maybe a) -> IO ()) -> IO Subscription |
+
+This will have many implications on our definition of \code{Observable}, as moving away from an implementation based on the continuation monad will mean giving up on free class instances for \code{Observable} such as \code{Functor, Applicative, Monad}. This will not be a problem as, as we will see, we will be able to easily provide such instances by ourselves. 
 
 \section{Termination and Error Handling}
 
