@@ -80,7 +80,7 @@ obr ev = case ev of
 -- lift :: ContT () IO (Event a) -> ( (Event b -> IO ()) -> (Event a -> IO ()) ) -> ContT () IO (Event b)
 -- lift :: ContT () IO (Event a) -> ( (Event b -> IO ()) -> Event a -> IO () )   -> ContT () IO (Event b)
 -- lift :: ContT () IO (Event a) -> ( Event a -> (Event b -> IO ()) -> IO () )   -> ContT () IO (Event b)
--- lift :: ContT () IO (Event a) -> ( Event a -> ContT () IO b )                 -> ContT () IO (Event b)
+-- lift :: ContT () IO (Event a) -> ( Event a -> ContT () IO Event b )           -> ContT () IO (Event b)
 -- THEREFORE lift = (>>=) in the Cont Monad
 -- lift obs f = ContT $ \ob :: (Event b -> IO ()) -> runContT obs (\a -> runContT (f a) ob)
 
@@ -155,7 +155,6 @@ rxflatmap o f = do
     active <- liftIO $ newTVarIO (0 :: Int) 
     err    <- liftIO $ newTVarIO False
     compl  <- liftIO $ newTVarIO False
-    
     let 
         flatmapCont ev = observable $ \downstream -> 
             let 
@@ -165,6 +164,7 @@ rxflatmap o f = do
                         s' <- createSubscription (print "unsubscribed inner")
                         addSubscription s s'
                         return s'
+                    
                     handle (onError) $ runContT (runStateT (f v) s') inner
                     where 
                         inner (ev_, s_) = case ev_ of
