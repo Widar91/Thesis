@@ -7,7 +7,7 @@
 
 \todo[inline]{Start from the minimal reference implementation, add exceptions and termination, explain how flatmap changes and lastly add subscription and talk about cancellation and the conctract.}
 
-Last Chapter we focused our analysis on the essence of the \code{Observable} interface, setting aside the many operational concerns that would come up when trying to implement these concepts into a usable, commercial API. In this Chapter we are going to adopt a step-by step approach that will guide us from our theoretical definition of \code{Observable} to a more concrete and usable one.
+So far we focused our analysis on the essence of the \code{Observable} interface, setting aside the many operational concerns that would come up when trying to implement these concepts into a usable, commercial API. In this chapter we are going to adopt a step-by step approach that will guide us from our theoretical definition of \code{Observable} to a more concrete and usable one.
 
 When discussing the \code{Iterable}, we progressively simplified the starting interface in order to derive a type which would represent its essence. We later applied the notion of duality from category theory in order to derive the \code{Observable} interface. We are now going to walk the simplification path backwards and re-introduce the operational components  we set aside before.
 
@@ -15,24 +15,97 @@ The following outlines the chapter and helps clarifying the steps we will undert
 
 \hmint |!a :: a -> IO () |
 
-When we apply the function to itself we obtain the \code{Observable}, which, as we saw previously, has the same signature and can be implemented by the continuation monad.
+When we apply the function to itself - i.e. substitute \code{a} for \code{!a} - we obtain the \code{Observable}, which, as we saw previously, presents the same signature and can be implemented by the continuation monad.
 
 \hmint |!!a :: (a -> IO ()) -> IO () |
 
-next, we are going to define two new functions, \code{(?)}, representing a continuation that can deal with termination and errors as inputs, and \code{(\%)}, a function handing over a \code{Subscription} which will be used to implement premature stream termination.
+Next, we are going to define two new functions, \code{(?)}, representing a continuation that can deal with termination and errors as inputs, and \code{(\%)}, a modified version of \code{(!)} which hands over a \code{Subscription}, a datatype used, as we will discuss, to implement premature stream termination.
 
 \hminted
 ?a :: Either Error (Maybe a) -> IO () -- error handling
 %a :: a -> IO Subscription            -- stream subscription
 \end{minted}
 
-In this chapter we are going to modify from our initial continuation-based definition of \code{Observable} by plugging in these two functions, obtaining the following:
+In this chapter we are conceptually going to augment our initial continuation-based definition of \code{Observable} by plugging in these two functions, obtaining the following:
 
-\hmint |%?a :: (Either Error (Maybe a) -> IO ()) -> IO Subscription |
+\hmint |%?a :: (Either SomeException (Maybe a) -> IO ()) -> IO Subscription |
 
-This will have many implications on our definition of \code{Observable}, as moving away from an implementation based on the continuation monad will mean giving up on free class instances for \code{Observable} such as \code{Functor, Applicative, Monad}. This will not be a problem as, as we will see, we will be able to easily provide such instances by ourselves. 
+This will have many implications on our definition of \code{Observable}, as moving away from an implementation based on the continuation monad will mean giving up on free class instances for \code{Observable} such as \code{Functor, Applicative, Monad}. This will not be a problem as we will easily be able to provide such instances by our own means. 
 
 \section{Termination and Error Handling}
+
+Let's start reshaping our interfaces by introducing a way to handle exceptions and termination of a stream. Informally, an \code{Observable} stream does not only produce one or more values, but it can terminate at a certain point in time or it can throw an exception while processing values.
+
+A more appropriate type is then the following:\\
+
+\haskellcode[firstline=4,lastline=5]{src/obs_contT.hs}\\
+
+Sticking with our \code{ContT} transformer in the definition of \code{Observable} starts now to become hairy and less and less readable. From a functional point of view, what we really need is for our original CPS function to accept two additional continuations, one dealing with completion and one with exceptions. This is unfortunately not expressable using \code{ContT}, as our hands are tight to one single input parameter. For this reason, let's implement our own datatypes for \code{Observable} and \code{Observer}.\\
+
+\haskellcode{src/observable_newtype.hs}\\
+
+We will use these types as the base for the rest of our discussion.
+
+On a side note, it is worth mentioning how the above code is not the only way we could have implemented termination and exceptions; by \textit{materializing} the three different events to the datatype \code{Event a}, we could have provided the following code that is still tight to the continuation monad transformer.\\
+
+\haskellcode[firstline=4,lastline=11]{src/obs_events.hs}\\
+
+Although this version is insightful for theoretical discussions on the properties and relations of \code{Observable} and the continuation monad, its use in a full fledged API is impractical. See Appendice \ref{app:b} for a full implementation of the Reactive Library based on this idea, which is meant to highlight the strong connection between \code{Observable} and other already existing functional structures from which it composes. 
+
+
+\section{Schedulers}
+
+Up until now our discussion on push based collections has not mentioned time. This might seem strange, especially when coming from and FRP background, where continuous time and functions are at the foundations of the theory. 
+
+- Elaborate on orthogonality of time.
+- Discuss how rx is synch by itself and how we need to add concurrency in order not to have it blocking. 
+- Discuss the different possible levels of concurrency
+- Discuss how this affects the implementation of operators: levels of safety
+- Discuss how threadpool scheduler breaks monad laws. \todo{Ask Erik about this.}
+
+\section{Subscriptions}
+
+With error handling and termination, our implemnentation starts getting more and more usable. We now want to add a mechanism that will allow us to stop an observable stream from the outside (as opposed to waiting for an onCompleted) whenever we don't require it's data anymore. 
+
+In order to achieve this we will use a new datatype, Subscription. The idea is that the subscribe function will return a Subscription to the user who will later be able to call unsubscribe on it and stop the stream associated to it from producing any more values.
+
+\todo[inline]{Talk about the best effort in canceling work and eventual consistency with the contract.}
+
+A Subscription in itself is nothing more than an IO action to perform once we stop an observable stream. Naturally, to make it usable in a real setting, we are gonna need to augment it more information: first, we will need a way to test whether the subscription is unsubscribed or not. The easiest way to do this is to use mutable state and store a boolean value with every Subscription. Moreover, some operators \todo[inline]{discuss childern subscriptions}
+
+Note that from now on, in order to allow our implementation to be usable, we will make use not only of functional language features, but of imperative ones as well. This will be done in situations in which it makes sense from an understandability point of view. There's no shame in using all our tools and being a purist is not always the best way.
+
+\todo[inline]{Probably better to put what follows somewhere else, right after we leave the theory for example.}
+Note that, even though the Observable's theoretical foundation is strictly functional, the road to make it usable is full of obstacles that are better tackled using imperative features, i.e. state. As much as I personally prefer a functional approach to programming, I will favor the solution that most clearly and easily solves the problem, be that functional of imperative.
+
+\haskellcode[firstline=1,lastline=1]{src/subsciption.hs}\\
+
+Our goal now is to implement a cancellation mechanism that would stop the Observable. This will be achieved by calling a function unsubscribe, which will prevent, from that moment on, any events to be signaled to any subscribed observer.
+
+This is achieved by wrapping the user supplied observer to the subscribe function with an internal one which adds this functionality and forwards all accepted events to the supplied one.
+
+\todo[inline]{the code for safe observer.}
+\haskellcode[firstline=25,lastline=40]{./../rx-formal/src/rx-semantics-ReaderT-ContT-final.hs}\\
+
+As a design decision, when unsubscribe is called on an observable subscription, the observable sequence will make a best effort attempt to stop all outstanding work. This means that any queued work that has not been started will not start. Any work that is already in progress might still complete as it is not always safe to abort work that is in progress. Results from this work will not be signaled to any previously subscribed observer instances.
+
+
+\todo[inline]{Motivation for children subscriptions: some operators will create inner observables and therefore will need to unsubscribe from them when the outer observable is unsubscribed from.}
+
+--------------------------------------------------\\
+On why using Cont () (StateT Subscription IO) (Event a) wouldn't work: it would be perfect in order to thread Subscriptions throughout execution making it usable inside operators, since the call to the continuation would return a state which would then be sequenced by >>=. This method fails with schedulers, in particular newThread since the state of the action executed on the new thread would be disconnected from the threading mentioned above. The other thread would get a state but it would not know what to do with it and would not have any ways to connect it to the original one passed by the subscribe. Another way is to use mapStateT to map the IO action that will result from the state to an action on the other thread. Again, this method won't work, 
+
+--------------------------------------------------\\
+On the motivation for a Subscription: it is needed so the user can cancel work at any time. This implies that a scheduler is used. If this is not the case the subscription will be returned synchronously after the execution of the whole stream. It will therefore be already unsubscribed and calling unsubscribe will be a NoOp. In the case that we actually use schedulers then we can unsubscribe from anywhere in our program. 
+
+Now the question is the following: can we reproduce the behaviour of unsubscribe with operators so that we can eliminate subscriptions altogether? That is, we can hide them to the outside and use them only inside the stream, we still need them but we don't necessarily need to return them when we subscribe. The behavious can be easily replaced by the use of takeUntil(Observable a) where we pass in a subject that will be signaled when we want to stop the stream. The takeUntil operator fires events from the upstream up until the point in which we signal the subject, then stops the stream and unsubscribes. 
+
+With this approach we seemingly lose one thing, i.e. the ability to specify what happens at unsubscription time; this functionality can simply be regained by a subscribe function that takes the unsubscribe action as a parameter and runs it when the stream is unsubscribed.
+--------------------------------------------------
+
+\section{Operators}
+
+--------------------------------------------------------------------------------
 
 The first thing we want to re-introduce is handling exceptions and termination of a stream. Where an Iterable can return a value, terminate or throw an exception when we ask for a value, and Observable, being it's dual, can produce one or more values, terminate or throw an exception when it is subscribed to. 
 
@@ -91,56 +164,5 @@ By using lift we can transform streams and implement operators...
 
 \todo[inline]{Modify keyboard press example from before to handle errors and termination. Point to later discussion regarding the rx contract, since now we can detect termination and errors but there is no guarantee that nothing will come after we receive them, i.e. that we abide the contract.}
 
-PUT THE CONTRACT HERE????
-
-\section{Schedulers}
-
-Up until now our discussion on push based collections has not mentioned time. This might seem strange, especially when coming from and FRP background, where continuous time and functions are at the foundations of the theory. 
-
-- Elaborate on orthogonality of time.
-- Discuss how rx is synch by itself and how we need to add concurrency in order not to have it blocking. 
-- Discuss the different possible levels of concurrency
-- Discuss how this affects the implementation of operators: levels of safety
-- Discuss how threadpool scheduler breaks monad laws. \todo{Ask Erik about this.}
-
-\section{Subscriptions}
-
-With error handling and termination, our implemnentation starts getting more and more usable. We now want to add a mechanism that will allow us to stop an observable stream from the outside (as opposed to waiting for an onCompleted) whenever we don't require it's data anymore. 
-
-In order to achieve this we will use a new datatype, Subscription. The idea is that the subscribe function will return a Subscription to the user who will later be able to call unsubscribe on it and stop the stream associated to it from producing any more values.
-
-\todo[inline]{Talk about the best effort in canceling work and eventual consistency with the contract.}
-
-A Subscription in itself is nothing more than an IO action to perform once we stop an observable stream. Naturally, to make it usable in a real setting, we are gonna need to augment it more information: first, we will need a way to test whether the subscription is unsubscribed or not. The easiest way to do this is to use mutable state and store a boolean value with every Subscription. Moreover, some operators \todo[inline]{discuss childern subscriptions}
-
-Note that from now on, in order to allow our implementation to be usable, we will make use not only of functional language features, but of imperative ones as well. This will be done in situations in which it makes sense from an understandability point of view. There's no shame in using all our tools and being a purist is not always the best way.
-
-\todo[inline]{Probably better to put what follows somewhere else, right after we leave the theory for example.}
-Note that, even though the Observable's theoretical foundation is strictly functional, the road to make it usable is full of obstacles that are better tackled using imperative features, i.e. state. As much as I personally prefer a functional approach to programming, I will favor the solution that most clearly and easily solves the problem, be that functional of imperative.
-
-\haskellcode[firstline=1,lastline=1]{src/subsciption.hs}\\
-
-Our goal now is to implement a cancellation mechanism that would stop the Observable. This will be achieved by calling a function unsubscribe, which will prevent, from that moment on, any events to be signaled to any subscribed observer.
-
-This is achieved by wrapping the user supplied observer to the subscribe function with an internal one which adds this functionality and forwards all accepted events to the supplied one.
-
-\todo[inline]{the code for safe observer.}
-\haskellcode[firstline=25,lastline=40]{./../rx-formal/src/rx-semantics-subscription.hs}\\
-
-As a design decision, when unsubscribe is called on an observable subscription, the observable sequence will make a best effort attempt to stop all outstanding work. This means that any queued work that has not been started will not start. Any work that is already in progress might still complete as it is not always safe to abort work that is in progress. Results from this work will not be signaled to any previously subscribed observer instances.
-
-
-\todo[inline]{Motivation for children subscriptions: some operators will create inner observables and therefore will need to unsubscribe from them when the outer observable is unsubscribed from.}
-
---------------------------------------------------\\
-On why using Cont () (StateT Subscription IO) (Event a) wouldn't work: it would be perfect in order to thread Subscriptions throughout execution making it usable inside operators, since the call to the continuation would return a state which would then be sequenced by >>=. This method fails with schedulers, in particular newThread since the state of the action executed on the new thread would be disconnected from the threading mentioned above. The other thread would get a state but it would not know what to do with it and would not have any ways to connect it to the original one passed by the subscribe. Another way is to use mapStateT to map the IO action that will result from the state to an action on the other thread. Again, this method won't work, 
-
---------------------------------------------------\\
-On the motivation for a Subscription: it is needed so the user can cancel work at any time. This implies that a scheduler is used. If this is not the case the subscription will be returned synchronously after the execution of the whole stream. It will therefore be already unsubscribed and calling unsubscribe will be a NoOp. In the case that we actually use schedulers then we can unsubscribe from anywhere in our program. 
-
-Now the question is the following: can we reproduce the behaviour of unsubscribe with operators so that we can eliminate subscriptions altogether? That is, we can hide them to the outside and use them only inside the stream, we still need them but we don't necessarily need to return them when we subscribe. The behavious can be easily replaced by the use of takeUntil(Observable a) where we pass in a subject that will be signaled when we want to stop the stream. The takeUntil operator fires events from the upstream up until the point in which we signal the subject, then stops the stream and unsubscribes. 
-
-With this approach we seemingly lose one thing, i.e. the ability to specify what happens at unsubscription time; this functionality can simply be regained by a subscribe function that takes the unsubscribe action as a parameter and runs it when the stream is unsubscribed.
---------------------------------------------------
 
 \section{The Reactive Contract}

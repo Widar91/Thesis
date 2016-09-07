@@ -1,14 +1,14 @@
 import Control.Monad.Cont
 import Control.Exception
 
--- datatype representing Either Error (Maybe a)
+-- datatype representing Either SomeException (Maybe a)
 data Event a = 
       OnNext a 
     | OnError SomeException 
     | OnCompleted
 
+type Observer   a = Event a -> IO ()
 type Observable a = ContT () IO (Event a)
-type Observer a = Event a -> IO ()
 
 -- bind inherited from the Continuation monad
 (>>=) :: Observable a -> (Event a -> Observable b) -> Observable b
