@@ -103,6 +103,7 @@ Just as we did with \code{Iterable} we can formally prove the covariant and cont
 \haskellcode{src/observable_functor.hs}
 
 \section{Observables are Continuations}
+\label{obscont}
 
 In the last section we mentioned how the \code{Observable} interface is equivalent to a CPS function. We are now going to formally prove this claim by providing a basic implementation of \code{Observable} as a type alias of Haskell's continuation monad. The Haskell language provides a monad construct for expressing continuations, as well as a monad transformer which allows the user to stack the functionality of continuations on top of other monads. A monad transformer is exactly what we need in order to express our \code{Observable} function producing a result in the IO monad.\\
 
