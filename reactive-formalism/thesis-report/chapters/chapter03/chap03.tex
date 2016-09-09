@@ -4,14 +4,11 @@
 
 \epigraph{\hspace{4ex}\textit{TBD}}{--- Lewis Carol,\\ \textit{Alice in Wonderland}}
 
-
-\todo[inline]{Start from the minimal reference implementation, add exceptions and termination, explain how flatmap changes and lastly add subscription and talk about cancellation and the conctract.}
-
-So far we focused our analysis on the essence of the \code{Observable} interface, setting aside the many operational concerns that would come up when trying to implement these concepts into a usable, commercial API. In this chapter we are going to adopt a step-by step approach that will guide us from our theoretical definition of \code{Observable} to a more concrete and usable one.
+So far we focused our analysis on the essence of the \code{Observable} interface, setting aside the many operational concerns that would come up when trying to implement these concepts into a usable, commercial API. In this chapter we are going to adopt a step-by step approach that will guide us from our theoretical definition of \code{Observable} to a concrete and usable library, to which we will refer to as Rx.
 
 When discussing the \code{Iterable}, we progressively simplified the starting interface in order to derive a type which would represent its essence. We later applied the notion of duality from category theory in order to derive the \code{Observable} interface. We are now going to walk the simplification path backwards and re-introduce the operational components  we set aside before.
 
-The following outlines the chapter and helps clarifying the steps we will undertake in the remainder of our discussion: first, think back to Section \ref{sec:applyingduality}, when we compared \code{Observable} to a setter of setters, the result of applying the \code{Observer} function to itself. Starting from this notion let's define a function \code{(!)}, representing an \code{Observer}:\todo{Should I make them datatype?}
+The following outlines the chapter and helps clarifying the steps we will undertake in the remainder of our discussion: first, think back to Section \ref{sec:applyingduality}, when we compared \code{Observable} to a setter of setters, the result of applying the \code{Observer} function to itself. Starting from this notion let's define a function \code{(!)}, representing an \code{Observer}:
 
 \hmint |!a :: a -> IO () |
 
@@ -50,7 +47,7 @@ On a side note, it is worth mentioning how the above code is not the only way we
 
 \haskellcode[firstline=4,lastline=11]{src/obs_events.hs}\\
 
-Although this version is insightful for theoretical discussions on the properties and relations of \code{Observable} and the continuation monad, its use in a full fledged API is impractical. See Appendice \ref{app:b} for a full implementation of the Reactive Library based on this idea, which is meant to highlight the strong connection between \code{Observable} and other already existing functional structures from which it composes. 
+Although this version is insightful for theoretical discussions on the properties and relations of \code{Observable} and the continuation monad, its use in a full fledged API is impractical. See Appendice \ref{app:b} for a full implementation of the Rx Library based on this idea, which is meant to highlight the strong connection between \code{Observable} and other already existing functional structures from which it composes. 
 
 \section{Operators}
 
@@ -114,7 +111,7 @@ By using lift we can transform streams and implement operators...
 \todo[inline]{Modify keyboard press example from before to handle errors and termination. Point to later discussion regarding the rx contract, since now we can detect termination and errors but there is no guarantee that nothing will come after we receive them, i.e. that we abide the contract.}
 
 
-\section{Schedulers}
+\section{Concurrency with Schedulers}
 
 At the end of Section \ref{obscont} we discussed how \code{Observable}s, by default, handle data by means of a synchronous pipeline, blocking the processing of successive elements via the call stack. It is worth mentioning again how this synchronous processing does not affect the ability of \code{Observable}s to handle asynchronous data.
 
@@ -138,31 +135,24 @@ Up to this point we haven't mentioned \code{Observable}s at all. This is the rea
 
 The only thing missing now is a way for us to combine the functionality of these two interfaces: \code{observeOn} and \code{subscribeOn} are the operators that will aid us on this task. The former will allow us to dispatch any call to an observer continuation on to the specified execution context, whereas the latter will allow us to control the concurrency of the \code{Observable} subscribe function.
 
-For the sake of completeness, the following snippet contains a simple implementation of the \code{observeOn} operator together with a sample usage.\\
+For the sake of completeness and understandability, the following snippet contains a simple implementation of the \code{observeOn} operator together with a sample usage.\\
 
 \haskellcode[firstline=49,lastline=58]{src/scheduler.hs}\\
 
 \haskellcode[firstline=60]{src/scheduler.hs}\\
 
 
+\subsection{A note on the concept of time}
 
-\subsection{A note on time}
+Our discussion on push-based collections so far has not once mentioned the concept of time. This might appear strange, especially to the reader familiar with Functional Reactive Programming, where functions over continuous time are at the foundations of the theory. As we mentioned in Section \ref{frp}, this dependency on continuous time comes at a great cost: commercial FRP libraries fail to successfully implement the concepts found in the theory as they cannot avoid simulating continuous time and approximating functions operating over it, being this concept inherently discrete in the context of computers.
 
-Our discussion on push-based collections so far has not once mentioned the concept of time. This might seem strange, especially to the reader familiar with Functional Reactive Programming, where functions over continuous time are at the foundations of the theory.
+Rx, on the other hand, completely sheds the notion of time from the notion of reactivity\cite{meijer2010observable}, shifting its focus, with the help of \code{Scheduler}s, to concurrency instead. Time still plays a role, although indirect, within the library: events are processed in the order they happen, and operators make such order is maintained, ultimately handing over to the user a stream of time-ordered events. See Section \ref{sec:contract} for a broader discussion on this matter.
 
-As we mentioned in Section \ref{frp}, commercial FRP implementations cannot avoid the problem of simulating continuous time and approximating functions that operate over it, as the concept of time in the context of computers is inherently discrete. 
+\subsection{Impact on Operators}
 
-As opposed to FRP, where the notion of reactivity is a function of time, our Reactive Library ...
+Previously we discussed how introducing concurrency is an orthogonal concept w.r.t. our reactive library. This statement is only partly true and falls short of its promises when we are dealing with combiner operators such as \code{(>>=)} or \code{combineLatest}. These operators will not work at their full potential in a synchronous setting, due to the fact that subscribing to a stream will consume it entirely - or forever process, in the case of an infinite stream - before allowing an operator to subscribe to a different one, effectively making interleaving of events impossible.
 
----------------------------------------------------
-
-Up until now our discussion on push based collections has not mentioned time. This might seem strange, especially when coming from and FRP background, where continuous time and functions are at the foundations of the theory. 
-
-- Elaborate on orthogonality of time.
-- Discuss how rx is synch by itself and how we need to add concurrency in order not to have it blocking. 
-- Discuss the different possible levels of concurrency
-- Discuss how this affects the implementation of operators: levels of safety
-- Discuss how threadpool scheduler breaks monad laws. \todo{Ask Erik about this.}
+The problem is gracefully solved with the introduction of \code{Scheduler}s, which, by allowing for \code{Observable}s to be executed on different contexts, indirectly make it possible for interleaving to happen and for combiner operators to work at their full potential. This comes at a - even though small - cost, which motivates our claim of partial orthogonality: the internal state of a combine operator needs to be synchronized and carefully handled as, with the introduction of concurrency, it can now be modified from different execution contexts.
 
 \section{Subscriptions}
 \label{sec:subscriptions}
@@ -207,6 +197,7 @@ With this approach we seemingly lose one thing, i.e. the ability to specify what
 
 
 
-
-
 \section{The Reactive Contract}
+\label{sec:contract}
+- Discuss how threadpool scheduler breaks monad laws. \todo{Ask Erik about this.}
+- Remember best effort cancellation.

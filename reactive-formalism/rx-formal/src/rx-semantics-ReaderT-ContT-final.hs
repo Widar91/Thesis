@@ -3,11 +3,11 @@
 module Main where
 
 import System.IO
+import Control.Arrow
 import Control.Monad
 import Control.Monad.Cont
 import Control.Concurrent.MVar
 import Control.Concurrent.STM
-import Control.Concurrent.STM.TVar
 import Control.Monad.Reader
 import Control.Exception
 import Data.IORef
@@ -36,13 +36,13 @@ subscribe obs obr = do
         safeObr = observer safeOnNext safeOnError safeOnCompleted
         safeOnNext a = do 
             b <- isUnsubscribed s
-            when (not b) $ obr (OnNext a)
+            unless b $ obr (OnNext a)
         safeOnError e = do 
             b <- isUnsubscribed s
-            when (not b) $ finally (obr $ OnError e) (unsubscribe s)
+            unless b $ finally (obr $ OnError e) (unsubscribe s)
         safeOnCompleted = do 
             b <- isUnsubscribed s
-            when (not b) $ obr OnCompleted >> unsubscribe s
+            unless b $ obr OnCompleted >> unsubscribe s
 
     runContT (runReaderT obs s) safeObr
     return s
@@ -60,18 +60,18 @@ observable os = do
             semiSafeOnNext a = do 
                 -- subscription check not necessary
                 b <- isUnsubscribed s
-                when (not b) $ handle semiSafeOnError (downstream $ OnNext a)
+                unless b $ handle semiSafeOnError (downstream $ OnNext a)
             semiSafeOnError e = do 
                 b <- isUnsubscribed s
-                when (not b) $ downstream (OnError e)
+                unless b $ downstream (OnError e)
             semiSafeOnCompleted = do 
                 b <- isUnsubscribed s
-                when (not b) $ handle semiSafeOnError (downstream OnCompleted)
+                unless b $ handle semiSafeOnError (downstream OnCompleted)
         in     
             os $ observer semiSafeOnNext semiSafeOnError semiSafeOnCompleted 
 
 observer :: (a -> IO ()) -> (SomeException -> IO ()) -> IO () -> Observer a
-observer on oe oc = \ev -> case ev of 
+observer on oe oc ev = case ev of 
     OnNext v    -> on v
     OnError e   -> oe e
     OnCompleted -> oc
@@ -91,7 +91,7 @@ rxtake o n = do
     where 
         takeFunc nRef ev = observable $ \downstream -> case ev of 
             OnNext v    -> do
-                n' <- atomicModifyIORef nRef $ \n -> (pred n, pred n)
+                n' <- atomicModifyIORef nRef $ pred &&& pred
                 when (n' >= 0) $ downstream (OnNext v)
                 when (n' == 0) $ downstream OnCompleted
             OnError e   -> downstream (OnError e) 
@@ -127,7 +127,7 @@ rxflatmap o f = do
                                 then downstream OnCompleted
                                 else removeSubscription s s_
                     
-                    handle (onError) $ runContT (runReaderT (f v) s_) inner
+                    handle onError $ runContT (runReaderT (f v) s_) inner
 
                 onError e = do
                     cond <- atomically $ do 
@@ -139,7 +139,7 @@ rxflatmap o f = do
                         c <- swapTVar compl True
                         a <- readTVar active
                         return (not c && a == 0)
-                    when cond $ downstream $ OnCompleted
+                    when cond $ downstream OnCompleted
             in case ev of
                 OnNext v    -> onNext v
                 OnError e   -> onError e
@@ -169,7 +169,7 @@ main = do
     hSetBuffering stdout LineBuffering  
     -- subscribe (obs `rxflatmap` (\v -> obs `rxmap` (+10))) obr
     subscribe (obs `rxmap` (+1) `observeOn` newThread `rxflatmap` (\v -> obs `rxmap` (+10))) obr
-    myThreadId >>= \id -> putStrLn ("Main Thread: " ++ show id)
+    myThreadId >>= \tid -> putStrLn ("Main Thread: " ++ show tid)
     return ()
 
 ------------------------------------------------------------------------------------
@@ -208,7 +208,7 @@ unsubscribe s = do
     mapM_ unsubscribe subs
 
 addSubscription :: Subscription -> Subscription -> IO ()
-addSubscription s s' = modifyIORef' (subscriptions s) $ \ss -> (s':ss)
+addSubscription s s' = modifyIORef' (subscriptions s) $ \ss -> s':ss
 
 removeSubscription :: Subscription -> Subscription -> IO ()
 removeSubscription s s' = modifyIORef' (subscriptions s) $ \ss -> delete s' ss
@@ -230,7 +230,7 @@ newThread = do
         yield
     subscription <- createSubscription (killThread tid)
 
-    return $ Worker 
+    return Worker 
         { _schedule = \action -> do
             atomically (writeTChan reqChan action)
             emptySubscription
@@ -244,7 +244,7 @@ newThread = do
 observeOn :: Observable a -> Scheduler -> Observable a
 observeOn o sched = do 
     s <- ask
-    w <- liftIO $ sched
+    w <- liftIO sched
     liftIO $ addSubscription s (_subscription w)
 
     let observeOnCont ev = observable $ \downstream -> case ev of
