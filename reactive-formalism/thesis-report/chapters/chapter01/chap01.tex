@@ -5,8 +5,7 @@
 \epigraph{\hspace{4ex}\textit{The cold winds are rising in the North... Brace yourselves, winter is coming.}}{--- George R.R. Martin,\\ \textit{A Game of Thrones}}
 
 
-\todo[inline]{Review this, especially the last sentence with the claim.}
-In this chapter we are going to introduce the concept of reactive programming and motivate it's importance and relevance with regards to modern applications and the type of problems developers have to face nowadays. Next, we are going to introduce the most popular commercial libraries that claim to solve the reactive problem, with the purpose of giving the reader some context for our discussion. We will conclude the chapter by claiming that \textit{Reactive Extensions} is the only library that truly embodies the essence of reactive programming, setting the basis for the remainder of the discussion in this thesis.
+In this chapter we are going to introduce the concept of reactive programming and motivate it's importance and relevance with regards to modern applications and the type of problems developers have to face nowadays. We are then going to introduce the most popular commercial libraries that claim to solve the reactive problem, with the purpose of giving the reader some context for our discussion and motivating the need for a mathematical formalization that abstracts over the class of problems these implementations set out to address.
 
 \section{The Essence of Reactive Programs}
 
@@ -18,7 +17,7 @@ The use of the term reactive program in scientific literature is dated back to t
 
 Interactive programs concretize the idea of a pull-based model of computation, where the program - the consumer in this case - has control over the speed at which data will be requested and handled. A perfect example of an interactive program is a control-flow structure such as a for-loop iterating over a collection of data: the program is in control of the speed at which data is retrieved from the containing collection and will request the next element only after it is done handling the current one.
 
-Reactive programs, on the contrary, embody the idea of a push-based - or event-driven - model of computation, where the speed at which the program interacts with the environment is determined by the environment rather than the program. In other words, it is now the producer of the data - i.e. the environment - who determines the speed at which events will occur whilst the program's role reduces to that of a silent observer that will react upon receiving events. Standard example of such systems are GUI applications dealing with various events originating from user input - e.g. mouse clicks, keyboard button presses - and programs dealing with stock market, social media or any other kind of asynchronous updates.  
+Reactive programs, on the contrary, embody the idea of a push-based - or event-driven - model of computation, where the speed at which the program interacts with the environment is determined by the environment rather than the program itself. In other words, it is now the producer of the data - i.e. the environment - who determines the speed at which events will occur whilst the program's role reduces to that of a silent observer that will react upon receiving events. Standard example of such systems are GUI applications dealing with various events originating from user input - e.g. mouse clicks, keyboard button presses - and programs dealing with stock market, social media or any other kind of asynchronous updates.  
 
 \section{Why Reactive Programming Matters}
 \label{sec:whyrpmatters}
@@ -27,7 +26,6 @@ Considering the definition and examples of reactive programs we analyzed in the 
 
 The table below provides a collection of types offered by common programming languages for handling data, parameterized over two variables: the size of the data, either one or multiple values, and the way data is handled, either by synchronous or asynchronous computations\cite{meijer2015spicing}.
 
-\todo{Fix the table, add caption.}
 \begin{center}
     \begin{tabular}{| l | l | l |}
     \hline
@@ -41,19 +39,17 @@ The table below provides a collection of types offered by common programming lan
     %\caption{The four fundamental effects}
 \end{center}
 
-The first row shows that synchronous functions come in two flavors: classic functions that return a single value of type \code{a} and functions that produce a collection of results of type \code{a}, abstracted through the \code{Iterable a} interface (See section \ref{sec:iterables}). These types of functions embody the standard imperative, pull-based approach to programming, where a call to a function synchronously blocks until the result is produced. 
+The first row shows that synchronous functions come in two flavors: classic functions that return a single value of type \code{a} and functions that produce a collection of results of type \code{a}, abstracted through the \code{Iterable a} interface (See section \ref{sec:iterables}). These types of functions embody the standard imperative, pull-based approach to programming, where a call to a function/method synchronously blocks until a result is produced. 
 
 Moving on to the second row, we encounter \code{Future a}, an interface representing an asynchronous computation that, at a certain point in the future, will result in a value of type \code{a}. Futures are generally created by supplying two callbacks together with the asynchronous computation, one to be executed in case of success and the other one in case of error. 
 
-Programming languages, however, are not as well equipped when it comes to handling asynchronous computations resulting in multiple values. The issue lies in the fact that the program's control flow is dictated by the environment rather than the program itself - i.e. inversion of control -, making it very hard to model such problems with commonly known control structures, which are optimized for sequential models of computation.
+Programming languages, however, are not as well equipped when it comes to handling asynchronous computations resulting in multiple values - i.e. push-based collections. The issue lies in the fact that the program's control flow is dictated by the environment rather than the program itself - i.e. inversion of control -, making it very hard to model such problems with commonly known control structures, which are optimized for sequential models of computation.
 
 This class of problems reflects the definition of reactive programs we analyzed in the previous section, where the environment asynchronously - i.e. at its own speed - pushes multiple events to the program. 
 
 Traditional solutions typically involve developers manually trying to compose callbacks by explicitly writing CPS (continuation passing style) code\cite{meijer2015spicing}, resulting in what it's commonly referred to as \textit{Callback Hell}\cite{edwards2009coherent}.
 
-\todo{Rewirte this part.}
-The reactive programming paradigm sets out to provide interfaces and abstractions to facilitate modeling the aforementioned class of problems. In the next session we will discuss and analyze various approaches and libraries attempting to implement this paradigm, motivating our need for a mathematical formalization to remove doubts and confusion. 
-
+The reactive programming paradigm sets out to provide interfaces and abstractions to facilitate modeling the aforementioned class of problems. Yet, interfaces are not enough when it comes to writing code in our everyday life, we need implementations of such interfaces. In the next section we are going to discuss and analyze various approaches and libraries that attempt to implement the reactive paradigm, motivating our need for a unifying mathematical formalization to aid in eliminating doubts and confusion. 
 
 \section{Reactive Programming in the Real World}
 
@@ -66,7 +62,7 @@ Claim that Observable is dual of Iterator in order to justify the why.
 \subsection{Reactive Streams}
 Try to define itself as reactive programming, mathematics prove the claim wrong, they implement asynchronous iterables. This does not make them useless, yet they are not a good solution for the problem we are trying to solve.
 
-\todo[inline]{Probably put the derivation in the appendix, it's not really the focus, I guess.}
+\todo[inline]{Probably put the derivation of Reactive Streams in the appendix, it's not really the focus, I guess.}
 
 \subsection{Functional Reactive Programming}
 \label{frp}

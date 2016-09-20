@@ -8,7 +8,7 @@ So far we focused our analysis on the essence of the \code{Observable} interface
 
 When discussing the \code{Iterable}, we progressively simplified the starting interface in order to derive a type which would represent its essence. We later applied the notion of duality from category theory in order to derive the \code{Observable} interface. We are now going to walk the simplification path backwards and re-introduce the operational components  we set aside before.
 
-The following outlines the chapter and helps clarifying the steps we will undertake in the remainder of our discussion: first, think back to Section \ref{sec:applyingduality}, when we compared \code{Observable} to a setter of setters, the result of applying the \code{Observer} function to itself. Starting from this notion let's define a function \code{(!)}, representing an \code{Observer}:
+The following helps clarifying the steps we will undertake in the remainder of our discussion: first, think back to Section \ref{sec:applyingduality}, when we compared \code{Observable} to a setter of setters, the result of applying the \code{Observer} function to itself. Starting from this notion let's define a function \code{(!)}, representing an \code{Observer}:
 
 \hmint |!a :: a -> IO () |
 
@@ -28,6 +28,8 @@ In this chapter we are conceptually going to augment our initial continuation-ba
 \hmint |%?a :: (Either SomeException (Maybe a) -> IO ()) -> IO Subscription |
 
 This will have many implications on our definition of \code{Observable}, as moving away from an implementation based on the continuation monad will mean giving up on free class instances for \code{Observable} such as \code{Functor, Applicative, Monad}. This will not be a problem as we will easily be able to provide such instances by our own means. 
+
+Even though the Observable's theoretical foundation is strictly functional, the road to make it usable is full of obstacles that are better tackled using imperative features, i.e. state. As much as I personally prefer a functional approach to programming, I will favor the solution that most clearly and easily solves the problem, be that functional of imperative.
 
 \section{Termination and Error Handling}
 
@@ -157,20 +159,48 @@ The problem is gracefully solved with the introduction of \code{Scheduler}s, whi
 \section{Subscriptions}
 \label{sec:subscriptions}
 
-With error handling and termination, our implemnentation starts getting more and more usable. We now want to add a mechanism that will allow us to stop an observable stream from the outside (as opposed to waiting for an onCompleted) whenever we don't require it's data anymore. 
+-----------------------------------------------------------------------
 
-In order to achieve this we will use a new datatype, Subscription. The idea is that the subscribe function will return a Subscription to the user who will later be able to call unsubscribe on it and stop the stream associated to it from producing any more values.
+- now purely practical concern: stop stream while processing from anywhere, tell observable I dont want to observe anymore, i.e. the observer is done.
+- what is it: IO action/s | in theory can be seen as readerT, the subscription is always the same one, but you can add stuff to it. 
+- who does it belong to: the observer, you get one for each subscribe.
+- how does it work: call unsubscribe, best effort stop work
+- impact on operators: a need for children -> now you can free resources 
+- impact on schedulers: kill the thread
+- write that it only works now that we have schedulers
+- edge enforcement
+- subject + takeuntil
+- why cannot be monoid, we need remove
+
+-----------------------------------------------------------------------
+
+With error handling, termination and schedulers, our implementation of Rx starts getting more and more usable. The next step is to add a mechanism that will allow us to stop an observable stream from anywhere in our program whenever we don't require it's data, i.e. a mechanism to tell the \code{Observable} that one of it's \code{Observer}s is not interested in receiving it's events anymore. 
+
+This is a purely practical concern and, as opposed to schedulers, adding a cancellation mechanism doesn't add expressive power to our reactive implementation. Yet, such feature is very useful when using Rx in commercial applications where resource handling gains much greater importance as opposed to a theoretical context.
+
+Before diving into the details of the implementation let's try to better understand the intended functionality. The general idea is that we will introduce a new datatype, \code{Subscription} which will be returned from the subscribe function. The user will later be able to use it to call a newly introduced function, \code{unsubscribe} which will stop the associated stream from producing any more values.
+
+It is important to understand that the notion of subscription is tight to the \code{Observer} rather than the \code{Observable}. The latter can, in fact, be subscribed to by various \code{Observer}s and our goal is to provide the user with the power to stop observing from any of them at any point in time.
+
+So, what is a \code{Subscription} then? Conceptually, it could be a simple boolean recording whether an \code{Observer} is unsubscribed from the stream. In practice it is useful to augment it with some additional information. First of all, \code{Subscription}s can be used for resource cleanup at the termination - either forced or natural - of a stream. It is therefore useful to associate an \code{IO ()} action to the datatype, which will represent the computation to be executed once the stream is unsubscribed from. Another improvement is making the type recursive, i.e. allowing \code{Subscription}s to contain, add and remove children subscriptions. This will be extremely useful for internal coordination of operators such as \code{(>>=)} and for resource management in the context of schedulers - more on this in the next sub-subsections.
+
+In order to allow our implementation to be usable, we will make use not only of functional language features, but of imperative ones as well. This will be done in situations in which it makes sense from an understandability point of view. There's no shame in using all our tools and being a purist is not always the best way.
+
+\todo[inline]{We could just chain IO actions, but then we cant remove, which can lead to stack overflow with huge thunks in flatmap.}
 
 \todo[inline]{Talk about the best effort in canceling work and eventual consistency with the contract.}
 
-A Subscription in itself is nothing more than an IO action to perform once we stop an observable stream. Naturally, to make it usable in a real setting, we are gonna need to augment it more information: first, we will need a way to test whether the subscription is unsubscribed or not. The easiest way to do this is to use mutable state and store a boolean value with every Subscription. Moreover, some operators \todo[inline]{discuss childern subscriptions}
+\haskellcode[firstline=34,lastline=38]{src/subsciption.hs}\\
 
-Note that from now on, in order to allow our implementation to be usable, we will make use not only of functional language features, but of imperative ones as well. This will be done in situations in which it makes sense from an understandability point of view. There's no shame in using all our tools and being a purist is not always the best way.
+Now that we have a datatype to represent our subscriptions, we need to insert it into our reactive equation; the following snipped shows the impact of subscriptions on our reactive interface.\\
 
-\todo[inline]{Probably better to put what follows somewhere else, right after we leave the theory for example.}
-Note that, even though the Observable's theoretical foundation is strictly functional, the road to make it usable is full of obstacles that are better tackled using imperative features, i.e. state. As much as I personally prefer a functional approach to programming, I will favor the solution that most clearly and easily solves the problem, be that functional of imperative.\\
+\haskellcode[firstline=12,lastline=21]{src/subsciption.hs}\\
 
-\haskellcode[firstline=1,lastline=1]{src/subsciption.hs}\\
+As we can see, \code{subscribe} now returns a \code{Subscription} and \code{Observer} contains one in its datatype.
+
+The key functionality of the subscription mechanism lies in the \code{subscribe} function:\\
+
+\haskellcode[firstline=10,lastline=19]{src/subsciption.hs}\\
 
 Our goal now is to implement a cancellation mechanism that would stop the Observable. This will be achieved by calling a function unsubscribe, which will prevent, from that moment on, any events to be signaled to any subscribed observer.
 

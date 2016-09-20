@@ -4,8 +4,6 @@
 
 \epigraph{\hspace{4ex}\textit{"Lasciate ogne speranza, voi ch'intrate."}}{--- Dante Alighieri,\\ \textit{Divina Commedia}}
 
-\todo{You know nothing John Snow quote}
-
  
 With the evolution of technologies brought in by the new millennium and the exponential growth of Internet-based services targeting millions of users all over the world, the Software Engineers' community has been continuously tested by an ever growing number of challenges related to management of increasingly large amounts of user data\cite{furht2010handbook}. 
 
@@ -21,18 +19,15 @@ Each of these traits directly influences the way programming languages, APIs and
 
 In this context, the concept of \textit{reactive programming} has gained much traction in the developer's community as a paradigm well-suited for the development of asynchronous  event-driven applications\cite{bainomugisha2013survey}. Unfortunately, reactive programming has been at the center of much discussion, if not confusion, with regards to its definition, properties and principles that identify it\cite{meijer2014reactive}.
 
-\todo{Version 1: less aggressive}
 The goal of our work is to use mathematics as a tool to analyze today's commercial reactive libraries and understand how they relate to the theoretical concept of reactive programming.  We are going to do so by utilizing concepts and ideas from functional programming and category theory with the purpose of deriving the reactive types, and will subsequently continue with the development of a reference reactive library which builds upon the previously derived theoretical foundations. 
 
-\todo{Version 2: more aggressive}
-The goal of our work is to shed light on this much discussed topic by providing a formalization of the reactive programming paradigm. We are going to do so by means of a mathematical approach in the derivation of the reactive types. We will then continue with the development of a reference library which builds upon the previously derived theoretical foundations and discuss how this relates to the already existing, commercial reactive APIs.
-
 \section*{Contributions}
-To the best of our knowledge, we are not aware of any previous work which analyses reactive programming from a mathematical and theoretical perspective.. 
 
-Many attempts have been conducted in order to formalize this concept, some more business-driven than others, such as the Reactive Manifesto, Reactive Streams. None of these precisely defines reactive programming, but in most cases result in a nice document to be presented to a company's management for adoption - lots of buzzwords, not much substance.
+To the best of our knowledge, we are not aware of any previous work which analyses reactive programming from a theoretical point of view or derives its types and interfaces though the use of mathematics.
 
-\todo[inline]{Write contributions}
+The most known attempt at defining reactive programming is the Reactive Manifesto\cite{reactive-manifesto}, a document that tries to describe reactive systems in terms of common properties and design principles. Although certainly insightful, we feel the document targets a more managing-focused audience as opposed to software developers and engineers. 
+
+Our work, on the other hand, aims at providing types and interfaces that describe the real essence of the reactive paradigm, aiding engineers that wish to use or develop reactive libraries in understanding and taking more informed decisions in the matter.
 
 \section*{Overview}
 
@@ -42,6 +37,8 @@ Chapter 2 starts with ... bla bla bla
 
 \section*{Notation \& Conventions}
 
-In the exposition of our work we will use Haskell as the reference programming language.. because it's close to mathematical notation..
+In the exposition of our work we will make use of Haskell as the reference language. This decision is motivated by the language's strong connection with mathematics as well as it's clean syntax.
 
-\todo[inline]{Write notation and conventions}
+All the code presented in this report, a minimal complete theoretical implementation and a full blown library implementation of a reactive library can be found at the associated code repository on Github ().
+
+\todo[inline]{Github link} 
