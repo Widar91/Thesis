@@ -3,27 +3,24 @@
 
 \epigraph{\hspace{4ex}\textit{"It was much pleasanter at home," thought poor Alice, "when one wasn't always growing larger and smaller, and being ordered about by mice and rabbits. I almost wish I hadn't gone down the rabbit-hole -- and yet -- and yet -- ..."}}{--- Lewis Carol,\\ \textit{Alice in Wonderland}}
 
+As we saw in Chapter \ref{chap:reactiveprogramming}, the \code{Iterable} interface embodies the idea of a pull-based model of computation and is the commonly adopted solution to dealing with synchronous computations resulting in multiple values. In this chapter we are going to formalize the intuition that there exists a duality relation between interactive and reactive programs, as well as between pull and push models of computations, by deriving the \code{Observable} interface starting from its dual counterpart, the \code{Iterable}.
 
-In this chapter we are going to derive the \code{Observable} interface starting from its dual counterpart, the \code{Iterable}, which, as we have seen in Chapter \ref{chap:reactiveprogramming}, embodies the idea of a pull-based model of computation and is the commonly adopted solution to dealing with synchronous computations resulting in multiple values.
+The derivation that follows will require the use of a number mathematical concepts such as \textit{categorical duality}, \textit{continuations}, \textit{(co)products}, \textit{(un)currying}, \textit{covariance}, \textit{contravariance} and \textit{functors}. We suggest the reader to get familiar with these topics before diving into the derivation. An accessible introduction to each can be found in Appendix \ref{app:a}.
 
 \section{Iterables}
 \label{sec:iterables}
 
-An \code{Iterable} is a programming construct which enables the user to traverse a collection of data, abstracting over the underlying implementation\cite{gamma1995design}.
+An \code{Iterable} is a programming interface which enables the user to traverse a collection of data, abstracting over the underlying implementation\cite{gamma1995design}.
 
-The interface and semantics of \code{Iterable}s were first introduced by the Gang of Four though their Iterator pattern\cite{gamma1995design}; today's most used programming languages expose the \code{Iterable} as the root interface in standard Collections APIs. 
+The interface and semantics of \code{Iterable}s were first introduced by the Gang of Four though their Iterator pattern\cite{gamma1995design}; today's most used programming languages expose the \code{Iterable} as the root interface for standard pull collections APIs - exposing concrete implementations such as maps, sets, indexed sequences and so on. 
 
 The \code{Iterable} interface is generally fixed across programming languages, with the exception of naming conventions - C\# and related languages call it IEnumerable - and slight differences in the types, as we can see from the following definitions.\\
-\todo{Should I use a datatype instead of class?}
 
 \haskellcode{src/iterable_interface.hs}\\
 
-Although the essence of the pattern is preserved in both definitions, we claim that the C\# version more clearly and accurately reflects the way side effects play a role in the usage of the interface: \code{moveNext} contains all the side effects of walking down the underlying collection and retrieving the next value while \code{current} can inspect the retrieved value multiple times in a pure way. The Java version, on the other hand, embeds the side effect in the \code{next} function, making it impossible to inspect the current value multiple times. For this reason and without loss of generality, we will make use of the C\# definition - modulo naming conventions - in the reminder of the discussion.\\
-\todo{Mention Subscription here?}
+Although the essence of the pattern is preserved in both definitions, we claim that the C\# version more clearly and accurately reflects the way side effects play a role in the usage of the interface: \code{moveNext} contains all the side effects of traversing the underlying collection and retrieving the next value while \code{current} can inspect the retrieved value multiple times in a pure way. The Java version, on the other hand, embeds the side effect in the \code{next} function, making it impossible to inspect the current value multiple times. For this reason and without loss of generality, we will make use of the C\# definition - modulo naming conventions - in the reminder of the discussion:\\
 
 \haskellcode{src/iterable_interface_final.hs}\\
-
-The derivation that follows will require the use of a number mathematical concepts such as categorical duality, continuations, (co)products, (un)currying, covariance, contravariance and functors. We suggest the reader to get familiar with these topics before diving into the derivation. An accessible introduction to each can be found in Appendix \ref{app:a}.
 
 \section{The Essence of Iterables}
 
@@ -31,7 +28,7 @@ The first step in deriving the \code{Observable} is to simplify our \code{Iterab
 
 Let's start by taking a closer look at the \code{Iterator} interface; we can observe that the definition of the functions \code{moveNext} and \code{current} is equivalent to a single function which returns either a value - analogous to a \code{moveNext} call returning true and a subsequent invocation to \code{current} - or nothing - analogous to a call to \code{moveNext} returning false. 
 
-Before we formalize this observation with a proper type, let us notice another effect that is hidden in the current definition of \code{moveNext}, but not made explicit by the its type: the possibility for an exception to be thrown by the function's body. 
+Before we formalize this observation with a proper type, let us notice another effect that is hidden in the current definition of \code{moveNext} and not made explicit by the its type: the possibility for an exception to be thrown by the function's body. 
 
 By merging these considerations with the notion of coproducts and Haskell's \code{Either} and \code{Maybe} type, we obtain the following definition.\\
 
@@ -47,16 +44,25 @@ At this point, we want to put aside the operational concerns regarding exception
 
 \haskellcode[firstline=4,lastline=5]{src/iterable_types.hs}\\
 
-We have now reached a point where no simplification is possible anymore. The obtained types reflect the essence of the Iterator patter: an \code{Iterable} is simply a function which, when invoked, produces an \code{Iterator} and an \code{Iterator} is itself a function producing a value of type \code{a} as a side effect. 
+We have now reached a point where no simplification is possible anymore. The obtained types reflect the essence of the Iterator patter: an \code{Iterable} is, theoretically, a function which, when invoked, produces an \code{Iterator} and an \code{Iterator} is itself a function producing a value of type \code{a} as a side effect. 
 
-\todo{Reformulate this part better, ask Erik for advice.}
-These types present some interesting properties; let's start by analyzing the \code{Iterator}, a function which, given nothing, will produce a value of type \code{a}. This type should sound familiar to the reader acquainted with object oriented programming as it precisely describes the notion of a getter function, i.e. a lazy producer of values. When looking at the relation between the \code{Iterator} type and its base component, \code{a}, we can observe how they are bound by a covariance relation:
-\todo{vending machine example?}
+When looking at the \code{Iterator} type from an object oriented perspective, the reader should notice a strict similarity to a \textit{getter} function - i.e. a lazy producer of values: iterators are, in fact, nothing more than getters of values of type \code{a}. The \code{Iterable}, on the other hand, is a function that enables the user to get an \code{Iterator}, i.e. a getter of a getter of \code{a}.
+
+This correspondence will turn out to be very insightful later on in our discussion, where we will observe that observables are nothing more that setters of setters, another instance of duality in our formalization. 
+
+When looking at the relation between the \code{Iterator} type and its base component, \code{a}, we can observe how they are bound by a covariance relation:\\
 \begin{displaymath}
-\frac{A <: B}{() \rightarrow A <: () \rightarrow B} 
+\frac{A <: B}{(() \rightarrow A) <: (() \rightarrow B)} 
 \end{displaymath}
 
-The \code{Iterable}, on the other hand, is nothing more than a getter of another getter, the \code{Iterator} and therefore abides by the covariance relation as well.
+The intuition can be easily understood when we think of an iterable as a soft-drink vending machine, i.e. a function which, whenever called, will hand me back a soft-drink:\\ 
+\begin{displaymath}
+\frac{Coke <: Soft Drink}{(() \rightarrow Coke) <: (() \rightarrow Soft Drink)} 
+\end{displaymath}
+
+If coke is a subtype of soft-drink, then whenever I am asked for a soft-drink vending machine, I can hand out a coke vending machine without incurring in any troubles with the person who asked, as that machine will correctly provide soft drinks whenever prompted for one.
+
+With \code{Iterable} being a getter itself, it should be clear how covariance plays the same role as with \code{Iterator}.
 
 To formally prove this intuition of a covariant relation, we instantiate the \code{Iterable}/\code{Iterator} types to a covariant \code{Functor}.\\
 
@@ -67,13 +73,13 @@ We will see in the next section how these concepts are relevant in expressing an
 \section{Applying Duality}
 \label{sec:applyingduality}
 
-By now, the reader should be somehow familiar with the concept of duality, as it has appeared many times throughout our discussion, in concepts such as pull and push models of computation or interactive and reactive programs. Duality is, in fact, a very important general theme that has manifestations in almost every area of mathematics\cite{gowers2010princeton} (See Appendice \ref{app:a} for an introductory discussion on the topic). 
+By now, the reader should be somehow familiar with the concept of duality, as it has appeared many times throughout our discussion in concepts such as pull and push models of computation or interactive and reactive programs. Duality is, in fact, a very important general theme that has manifestations in almost every area of mathematics\cite{gowers2010princeton} (See Appendice \ref{app:a} for an introductory discussion on the topic). 
 
 Starting from the fact that the \code{Iterable} interface embodies the idea of interactive programming, let's use the principle of duality to derive the \code{Observable} interface and see how it relates to the concept of reactive programming. In practice, this translates to the simple task of flipping the function arrows in the \code{Iterable} interface, taking us from a function resulting in a value of type \code{a} to one accepting an \code{a}.\\
 
 \haskellcode{src/iter_to_obs.hs}\\
 
-Not how the side effects are bound to function application rather than values, hence their flipped position in the \code{Observable} type.
+Note how the side effects are bound to function application rather than values, hence their flipped position in the \code{Observable} type.
 
 The reader acquainted with functional programming will easily see the resemblance between the \code{Observable} type and a CPS function (See Appendice \ref{app:a}).\\
 
@@ -81,24 +87,27 @@ The reader acquainted with functional programming will easily see the resemblanc
 
 It is clear how an \code{Observable} is nothing more than a CPS function where the result type \code{r} is instantiated to \code{IO ()}. To convince ourselves of this equivalence, let's think about the definition of a CPS function, i.e. a suspended computation which, given another function - the continuation - as argument, will produce its final result. This definition suits perfectly the idea behind \code{Observable} discussed in Section \ref{subsec:rx}: a function which will do nothing - i.e. is suspended - until it is subscribed to by an \code{Observer}.
 
-A continuation, on the other hand, represents the future of the computation, a function from an intermediate result to the final result\cite{newbern-monads}; in the context of \code{Observable}s, the continuation represents the \code{Observer}, a function specifying what will happen to a value produced by the \code{Observable}, whenever it will become available, that is, whenever it will be pushed into the \code{Observer}. Since a continuation can be called multiple times within the surrounding CPS context, it is easy to see how this mathematical concept allows us to easily deal with multiple values produced at different times in the future.
+A continuation, on the other hand, represents the future of the computation, a function from an intermediate result to the final result\cite{newbern-monads}; in the context of \code{Observable}s, the continuation represents the \code{Observer}, a function specifying what will happen to a value produced by the \code{Observable}, whenever it will become available, that is, whenever it will be pushed into the \code{Observer}. Since a continuation can be called multiple times within the surrounding CPS context, it is easy to see how this mathematical concept allows us to deal with multiple values produced at different times in the future.
 
 In the previous section we have discussed many properties associated with \code{Iterable}s. Let's analyze now how these properties translate under dualisation and how they affect our new derived interface, the \code{Observable}.
 
 First, moving from the observation that an \code{Iterable} is a getter of a getter, we can observe that the \code{Observable} plays exactly the opposite role, that is, a setter of a setter. The type \code{Observer :: a -> IO ()} represents, in fact, the essence of a setter function, whereas the \code{Observable} consists in nothing more than the simple task of applying the observer function to itself, producing a setter of setters. 
 
-\todo{Probably will need to riformulate this.}
 While the discussion about \code{Iterable}'s covariance was quite intuitive, things get a little bit more complicated when analyzing \code{Observable}s. Let's start by informally introducing the notion of positivity and negativity of types: we can interpret a function of type \code{f :: a -> b} as a way for us to produce a value of type \code{b}. In this context, \code{b} is considered to be positive with respect to the type \code{a -> b}. On the other hand, in order to apply the function, we are going to need a value of type \code{a}, which we will need to get from somewhere else; \code{a} is therefore considered to be negative w.r.t. the function type, as the function introduces a need for this value in order to produce a result. The point of this distinction is that positive type variables introduce a covariant relation between base and function type whereas negative type variables introduce a contravariant relation.
 
 Analyzing \code{Iterable} within this framework is easy, the \code{Iterator} function contains a single type parameter found in a positive position, therefore resulting in a covariant relation; being the \code{Iterable} the result of applying the \code{Iterator} function to itself, we again result in a covariant relation w.r.t. the type parameter \code{a}.
 
-The \code{Observer} function, on the contrary, introduces a need for a value of type \code{a}, resulting in a contravariant relation w.r.t. \code{a}. Again, the \code{Observable} function is the result of applying \code{Observer} to itself; surprisingly, this results in \code{a} being in a positive position. The intuition is easily understood by thinking about the rules of arithmetic multiplication: \code{a} is in negative position w.r.t. the \code{Observer} function, whereas the \code{Observer} is in negative position w.r.t. the \code{Observable}. This leads to \code{a} being negated twice, ultimately resulting in a positive position within the \code{Observable} function. Before we formalize this intuition, let's convince ourselves that \code{Observable}s effectively produces a value of type \code{a} by looking at an example:\\
+The \code{Observer} function, on the contrary, introduces a need for a value of type \code{a}, resulting in a contravariant relation w.r.t. \code{a}. Again, the \code{Observable} function is the result of applying \code{Observer} to itself; surprisingly, this results in \code{a} being in a positive position. The intuition is easily understood by thinking about the rules of arithmetic multiplication: \code{a} is in negative position w.r.t. the \code{Observer} function, whereas the \code{Observer} is in negative position w.r.t. the \code{Observable}. This leads to \code{a} being negated twice, ultimately resulting in a positive position within the \code{Observable} function.\\ 
 
-\haskellcode{src/polarity.hs}\\
+\haskellcode[lastline=19]{src/polarity.hs}\\
+
+Before we formalize this intuition, let's convince ourselves that \code{Observable}s effectively produces a value of type \code{a} by looking at an example:\\
+
+\haskellcode[firstline=21]{src/polarity.hs}\\
 
 It is clear from this implementation that \code{randomValueObs} indeed produces a value of type \code{Int}, whereas the \code{Observer} introduces a need for such value in order to be applied. For more details on the positivity and negativity of functions and type variables, see \cite{pos-neg}\cite{pos-neg2}.
 
-Just as we did with \code{Iterable} we can formally prove the covariant and contravariant relations by instantiating \code{Observable} to a \code{Functor} instance and \code{Observer} to a Cofunctor one (Haskell uses the name \code{Contravariant} instead).\\
+Just as we did with \code{Iterable/Iterator}, we can formally prove the covariant and contravariant relations between \code{Observable/Observer} and their base type \code{a} by instantiating them to \code{Functor} and \code{Contravariant} (i.e. Cofunctor) respectively.
 
 \haskellcode{src/observable_functor.hs}
 
