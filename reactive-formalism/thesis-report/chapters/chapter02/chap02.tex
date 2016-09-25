@@ -99,36 +99,74 @@ Analyzing \code{Iterable} within this framework is easy, the \code{Iterator} fun
 
 The \code{Observer} function, on the contrary, introduces a need for a value of type \code{a}, resulting in a contravariant relation w.r.t. \code{a}. Again, the \code{Observable} function is the result of applying \code{Observer} to itself; surprisingly, this results in \code{a} being in a positive position. The intuition is easily understood by thinking about the rules of arithmetic multiplication: \code{a} is in negative position w.r.t. the \code{Observer} function, whereas the \code{Observer} is in negative position w.r.t. the \code{Observable}. This leads to \code{a} being negated twice, ultimately resulting in a positive position within the \code{Observable} function.\\ 
 
-\haskellcode[lastline=19]{src/polarity.hs}\\
+\haskellcode[firstline=3,lastline=17]{src/polarity.hs}\\
 
-Before we formalize this intuition, let's convince ourselves that \code{Observable}s effectively produces a value of type \code{a} by looking at an example:\\
+Before we formalize this claim, let's convince ourselves that \code{Observable}s effectively produces a value of type \code{a} by looking at an example:\\
 
 \haskellcode[firstline=21]{src/polarity.hs}\\
 
 It is clear from this implementation that \code{randomValueObs} indeed produces a value of type \code{Int}, whereas the \code{Observer} introduces a need for such value in order to be applied. For more details on the positivity and negativity of functions and type variables, see \cite{pos-neg}\cite{pos-neg2}.
 
-Just as we did with \code{Iterable/Iterator}, we can formally prove the covariant and contravariant relations between \code{Observable/Observer} and their base type \code{a} by instantiating them to \code{Functor} and \code{Contravariant} (i.e. Cofunctor) respectively.
+Just as we did with \code{Iterable/Iterator}, we can formally prove the covariant and contravariant relations between \code{Observable/Observer} and their base type \code{a} by instantiating them to \code{Functor} and \code{Contravariant} - i.e. Cofunctor - respectively.\\
 
-\haskellcode{src/observable_functor.hs}
+\haskellcode[firstline=3]{src/observable_functor.hs}\\
+
+\section{Termination and Error Handling}
+\label{termerr}
+
+We began this chapter by progressively simplifying the \code{Iterable}'s interface in order to derive a type that would theoretically represent its very essence. One of the most important steps was setting aside concerns regarding termination an error handling of a collection. We are now going to reshape our reactive interfaces in order to address these concerns and appropriately describe the potential side effects directly in the types. 
+
+Informally, an \code{Observable} stream might not only produce one or more values, but it might gracefully terminate at a certain point in time or throw an exception and abruptly terminate whilst processing values. A more appropriate type for \code{Observer} is then the following:\\
+
+\haskellcode{src/observable_compl_err.hs}\\
+
+Just as with \code{Iterable}, the introduction of \code{Either SomeException} allows us to express that the \code{Observer} can handle unexpected exceptions, while the \code{Maybe} reflects the possibility for a stream to end and propagate no more values. 
+
+Unfortunately, this type is very hard to read as well as understand for someone new to the topic. Looking at the matter from a functionality point of view, what we really need is for our CPS function - i.e. the \code{Observable} - to accept two additional continuations, one dealing with completion and one with exceptions. This brings us to the final version of our reactive interfaces for push-base collections\footnote{The two definitions are equivalent, the first simulating the second with the use of pattern matching.}\\
+
+\haskellcode{src/observable_newtype.hs}\\
+
+The \code{Observable} is now a special version of a CPS function accepting three continuation functions - embedded inside the \code{Observer} -, one for each effect an \code{Observable} can propagate: value, termination or exception.
 
 \section{Observables are Continuations}
 \label{obscont}
 
-In the last section we mentioned how the \code{Observable} interface is equivalent to a CPS function. We are now going to formally prove this claim by providing a basic implementation of \code{Observable} as a type alias of Haskell's continuation monad. The Haskell language provides a monad construct for expressing continuations, as well as a monad transformer which allows the user to stack the functionality of continuations on top of other monads. A monad transformer is exactly what we need in order to express our \code{Observable} function producing a result in the IO monad.\\
+Throughout our discussion, we have mentioned multiple times the connection between \code{Observable} and CPS functions. In this section we are going to explore this matter and see how we these two concepts are effectively the same thing.
 
-\haskellcode[firstline=3,lastline=14]{src/observable_contT.hs}\\
+We are going to start from the notion that \code{Observable} is, at its essence, nothing more than a setter of setters, the result of applying the \code{Observer} function to itself. We can than express the \code{Observer} as a function \code{(!)}\footnote{Regard the code used in this explaination as pseudo-Haskell.} that negates its type argument and results in a side-effectful computation.\\
+
+\hmint |!a :: a -> IO () |\\
+
+When we apply the function to itself - i.e. substitute \code{a} for \code{!a} - we obtain our first definition of \code{Observable}, a CPS function that instantiates the result to \code{IO ()}.\\
+
+\hmint |!!a :: (a -> IO ()) -> IO () |\\
+
+As we have seen in the previous section, this definition is not expressive enough when we want to make explicit all the effects that are involved when dealing with push-base collections. It is therefore necessary to deviate from the standard definition of continuation and replace the inner application of \code{(!)} with a new function \code{(?)}, whose type embed the involved effects:\\
+
+\hminted
+?a  ::  Either Error (Maybe a) -> IO () -- termiantion and error handling
+!?a :: (Either Error (Maybe a) -> IO ()) -> IO ()
+\end{minted}
+\\
+
+Note how this definition is equivalent - modulo pattern matching - to the one used in the previous section, where we unwrapped the \code{(?)} function to three different ones, each addressing one of the possible effects. 
+
+Finally, we can now translate this pseudo-code into real Haskell, proving the equivalence between \code{Observable} and CPS functions. We are going to do so with the help of Haskell's continuation monad transformer, a construct which allows to stack the functionality of the continuation monad on top of other monads. With it, we can define the \code{Observable} as a continuation  transformer producing an empty result in the IO monad.\\
+
+\haskellcode[firstline=5,lastline=14]{src/observable_events.hs}\\
 
 At this point we have all the necessary tools to create and run an \code{Observable}.\\
 
-\haskellcode[firstline=16]{src/observable_contT.hs}\\
+\haskellcode[firstline=16]{src/observable_events.hs}\\
 
-Notice how an observable only pushes values once subscribed to and acts as a suspended computation otherwise. 
+Notice how, being a continuation, an \code{Observable} only pushes values once subscribed to and acts as a suspended computation otherwise. 
 
-The code abobe, being a toy example fails to show some fundamental properties associated with this new interface; in particular, it fails to show how \code{Observable}s can actually handle asynchronous sources of data. The following snippet of code contains a more realistic and meaningful example of an \code{Observable} handling keyboard presses, asynchronous events by nature. It is worth noticing how our basic implementation of \code{Observable} based on continuations works just as well as a full blown one in terms of its core capability of handling asynchronous data.\\ 
+The code above, being a toy example, fails to show some fundamental properties associated with this new interface; in particular, it fails to show how \code{Observable}s can actually handle asynchronous sources of data. The following snippet of code contains a more realistic and meaningful example of an \code{Observable} handling keyboard presses, asynchronous events by nature: whenever the user presses a key, an event containing the corresponding character is propagated to the \code{Observer} and will eventually be printed on the command line\footnote{The code omits details of handling the \code{Event} type in order to avoid clutter}. It is worth noticing how our basic implementation of \code{Observable} based on continuations works just as well as a full blown one in terms of its core capability of handling asynchronous data.\\ 
 
-\todo[inline]{Put the actual demo that listens to keyboard presses. In the example, press 3 times and see that all the events are handled and none are lost.}
 \haskellcode[firstline=13]{src/create_run_demo.hs}\\
 
-This example brings us to the following observation: \code{Observable}s are capable of handling asynchronous data sources, yet the means by which the data is handled are not asynchronous by default. This is a common misconception and source of much confusion among the community: an \code{Observable}, by default, synchronously handles it's incoming data, blocking the next incoming events whilst processing the current one. This behavior is not fixed though: as we will see in Chapter \ref{chap:outoftherabbithole}, it is possible to make use of \code{Scheduler}s in order to alter the control flow of the data processing and dispatch the work to other threads.
+This example brings us to the following observation: \code{Observable}s are capable of handling asynchronous data sources, yet the means by which the data is handled are not asynchronous by default. This is a common misconception and source of much confusion among the community: the \code{Observable} interface is not opinionated w.r.t. concurrency and therefore, by default, synchronously handles it's incoming data, blocking the next incoming events whilst processing the current one. This behavior is not fixed though: as we will see in Chapter \ref{chap:outoftherabbithole}, it is possible to make use of \code{Scheduler}s to orthogonally introduce concurrency in our reactive systems, altering the control flow of the data processing allowing the user to dispatch the work to other threads.
 
-At this point in the discussion we have arrived to a working implementation of a push based collection purely derived from mathematical and categorical concepts such as duality and continuations. In the next Chapter we will take the necessary steps to transform this basic implementation into a full blown API that can be used in real world applications.
+At this point in the discussion we have arrived to a working implementation of a push based collection purely derived from mathematical and categorical concepts such as duality and continuations. In spite of being very insightful for theoretical discussions on the properties and relations of \code{Observable} and the continuation monad, this implementation of the reactive types is impractical in the context of a full fledged API. In the next Chapter we will take the necessary steps to build the bridge between theory and practice, providing a reference implementation of \code{Observable} more adapt to be utilized in real world applications.
+
+For a full implementation of a Reactive Library based on the ideas presented in this section, aimed at highlighting the strong connection between \code{Observable} and other already existing functional structures from which it composes, see Appendice \ref{app:b}. 

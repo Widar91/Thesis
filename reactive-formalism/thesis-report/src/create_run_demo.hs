@@ -10,12 +10,19 @@ observable = ContT
 subscribe :: Observable a -> Observer a -> IO ()
 subscribe = runContT 
 
+obs :: Observable Char
 obs = observable $ \obr -> do
-    passiveMotionCallback $= Just (\p -> obr p)    
+    keyboardCallback $= Just (\c p -> obr c)    
+
+display :: DisplayCallback
+display = do
+  clear [ ColorBuffer ]
+  flush
 
 main :: IO ()
 main = do
   (_progName, _args) <- getArgsAndInitialize
-  _window <- createWindow "Hello World"
+  _window <- createWindow "Observable Keyboard"
   subscribe obs print
+  displayCallback $= display
   mainLoop
