@@ -12,13 +12,13 @@ The derivation that follows will require the use of a number mathematical concep
 
 An \code{Iterable} is a programming interface which enables the user to traverse a collection of data, abstracting over the underlying implementation\cite{gamma1995design}.
 
-The interface and semantics of \code{Iterable}s were first introduced by the Gang of Four though their Iterator pattern\cite{gamma1995design}; today's most used programming languages expose the \code{Iterable} as the root interface for standard pull collections APIs - exposing concrete implementations such as maps, sets, indexed sequences and so on. 
+The interface and semantics of \code{Iterable}s were first introduced by the Gang of Four though their Iterator pattern\cite{gamma1995design}; today's most used programming languages introduce the \code{Iterable} as the root interface for standard pull collections APIs - exposing concrete implementations such as maps, sets, indexed sequences and so on. 
 
 The \code{Iterable} interface is generally fixed across programming languages, with the exception of naming conventions - C\# and related languages call it IEnumerable - and slight differences in the types, as we can see from the following definitions.\\
 
 \haskellcode{src/iterable_interface.hs}\\
 
-Although the essence of the pattern is preserved in both definitions, we claim that the C\# version more clearly and accurately reflects the way side effects play a role in the usage of the interface: \code{moveNext} contains all the side effects of traversing the underlying collection and retrieving the next value while \code{current} can inspect the retrieved value multiple times in a pure way. The Java version, on the other hand, embeds the side effect in the \code{next} function, making it impossible to inspect the current value multiple times. For this reason and without loss of generality, we will make use of the C\# definition - modulo naming conventions - in the reminder of the discussion:\\
+Although the essence of the pattern is preserved by both definitions, we claim that the C\# version more clearly and accurately reflects the way side effects play a role in the usage of the interface: \code{moveNext} contains all the side effects of traversing the underlying collection and retrieving the next value while \code{current} can inspect the retrieved value multiple times in a pure way. The Java version, on the other hand, embeds the side effect in the \code{next} function, making it impossible to inspect the current value multiple times. For this reason and without loss of generality, we will make use of the C\# definition - modulo naming conventions - in the reminder of the discussion:\\
 
 \haskellcode{src/iterable_interface_final.hs}\\
 
@@ -48,14 +48,14 @@ We have now reached a point where no simplification is possible anymore. The obt
 
 When looking at the \code{Iterator} type from an object oriented perspective, the reader should notice a strict similarity to a \textit{getter} function - i.e. a lazy producer of values: iterators are, in fact, nothing more than getters of values of type \code{a}. The \code{Iterable}, on the other hand, is a function that enables the user to get an \code{Iterator}, i.e. a getter of a getter of \code{a}.
 
-This correspondence will turn out to be very insightful later on in our discussion, where we will observe that observables are nothing more that setters of setters, another instance of duality in our formalization. 
+This correspondence will turn out to be very insightful later on in our discussion, where we will observe that \code{Observable} is nothing more that a setter of setters, another instance of duality in our formalization. 
 
 When looking at the relation between the \code{Iterator} type and its base component, \code{a}, we can observe how they are bound by a covariance relation:\\
 \begin{displaymath}
 \frac{A <: B}{(() \rightarrow A) <: (() \rightarrow B)} 
 \end{displaymath}
 
-The intuition can be easily understood when we think of an iterable as a soft-drink vending machine, i.e. a function which, whenever called, will hand me back a soft-drink:\\ 
+The intuition can be easily understood when we think of an iterable as a soft-drink vending machine, i.e. a function which, whenever called, will give back a soft-drink:\\ 
 \begin{displaymath}
 \frac{Coke <: Soft Drink}{(() \rightarrow Coke) <: (() \rightarrow Soft Drink)} 
 \end{displaymath}
@@ -64,11 +64,11 @@ If coke is a subtype of soft-drink, then whenever I am asked for a soft-drink ve
 
 With \code{Iterable} being a getter itself, it should be clear how covariance plays the same role as with \code{Iterator}.
 
-To formally prove this intuition of a covariant relation, we instantiate the \code{Iterable}/\code{Iterator} types to a covariant \code{Functor}.\\
+To formally prove the intuition of a covariant relation, we instantiate the \code{Iterable}/\code{Iterator} types to a covariant \code{Functor}.\\
 
 \haskellcode[firstline=3]{src/iterable_functor.hs}\\
 
-We will see in the next section how these concepts are relevant in expressing and motivating the relevance of the duality between Iterables and Observables.
+We will see in the next section how these concepts are relevant in expressing and motivating the duality between Iterables and Observables.
 
 \section{Applying Duality}
 \label{sec:applyingduality}
@@ -122,7 +122,7 @@ Informally, an \code{Observable} stream might not only produce one or more value
 
 Just as with \code{Iterable}, the introduction of \code{Either SomeException} allows us to express that the \code{Observer} can handle unexpected exceptions, while the \code{Maybe} reflects the possibility for a stream to end and propagate no more values. 
 
-Unfortunately, this type is very hard to read as well as understand for someone new to the topic. Looking at the matter from a functionality point of view, what we really need is for our CPS function - i.e. the \code{Observable} - to accept two additional continuations, one dealing with completion and one with exceptions. This brings us to the final version of our reactive interfaces for push-base collections\footnote{The two definitions are equivalent, the first simulating the second with the use of pattern matching.}\\
+Unfortunately, this type is very hard to read as well as understand for someone new to the topic. Looking at the matter from a functionality point of view, what we really need is for our CPS function - i.e. the \code{Observable} - to accept two additional continuations, one dealing with completion and one with exceptions. We can achieve this by first noticing that our type is nothing more than a coproduct - the same that we introduced previously for \code{Iterable} - of three base types: \code{a + SomeException + ()}. By utilizing the notion of product - the dual of coproduct - we can split the function handling the initial type into three different ones. This brings us to the final version of our reactive interfaces for push-base collections\footnote{The two definitions are equivalent also from an implementation point of view, the first simulating the second though the use of pattern matching.}\\
 
 \haskellcode{src/observable_newtype.hs}\\
 
@@ -149,21 +149,23 @@ As we have seen in the previous section, this definition is not expressive enoug
 \end{minted}
 \\
 
-Note how this definition is equivalent - modulo pattern matching - to the one used in the previous section, where we unwrapped the \code{(?)} function to three different ones, each addressing one of the possible effects. 
+Note how this definition is equivalent to the one used in the previous section, where we used the notion of products to unwrap the \code{(?)} function into three different ones, each addressing one of the possible effects. 
 
 Finally, we can now translate this pseudo-code into real Haskell, proving the equivalence between \code{Observable} and CPS functions. We are going to do so with the help of Haskell's continuation monad transformer, a construct which allows to stack the functionality of the continuation monad on top of other monads. With it, we can define the \code{Observable} as a continuation  transformer producing an empty result in the IO monad.\\
 
-\haskellcode[firstline=5,lastline=14]{src/observable_events.hs}\\
+\haskellcode[firstline=5,lastline=16]{src/observable_events.hs}\\
+
+The code above uses a slightly different approach to expressing the three types of side effects an \code{Observer} has to deal with. Insead of using \code{Either} and \code{Maybe} from Haskell's libraries, we utilize our own custom datatype \code{Event}, a coproduct of values of type \code{a + SomeException + ()}; although the two definitions are equivalent in every aspect, the adopted one offers more clarity in terms of code readability.
 
 At this point we have all the necessary tools to create and run an \code{Observable}.\\
 
-\haskellcode[firstline=16]{src/observable_events.hs}\\
+\haskellcode[firstline=18]{src/observable_events.hs}\\
 
 Notice how, being a continuation, an \code{Observable} only pushes values once subscribed to and acts as a suspended computation otherwise. 
 
-The code above, being a toy example, fails to show some fundamental properties associated with this new interface; in particular, it fails to show how \code{Observable}s can actually handle asynchronous sources of data. The following snippet of code contains a more realistic and meaningful example of an \code{Observable} handling keyboard presses, asynchronous events by nature: whenever the user presses a key, an event containing the corresponding character is propagated to the \code{Observer} and will eventually be printed on the command line\footnote{The code omits details of handling the \code{Event} type in order to avoid clutter}. It is worth noticing how our basic implementation of \code{Observable} based on continuations works just as well as a full blown one in terms of its core capability of handling asynchronous data.\\ 
+The code above, being a toy example, fails to show some fundamental properties associated with this new interface; in particular, it fails to show how \code{Observable}s can actually handle asynchronous sources of data. The following snippet of code contains a more realistic and meaningful example of an \code{Observable} handling keyboard presses, asynchronous events by nature: whenever the user presses a key, an event containing the corresponding character is propagated to the \code{Observer} and will eventually be printed on the command line. It is worth noticing how our basic implementation of \code{Observable} based on continuations works just as well as a full blown one in terms of its core capability of handling asynchronous data.\\ 
 
-\haskellcode[firstline=13]{src/create_run_demo.hs}\\
+\haskellcode[firstline=17]{src/create_run_demo.hs}\\
 
 This example brings us to the following observation: \code{Observable}s are capable of handling asynchronous data sources, yet the means by which the data is handled are not asynchronous by default. This is a common misconception and source of much confusion among the community: the \code{Observable} interface is not opinionated w.r.t. concurrency and therefore, by default, synchronously handles it's incoming data, blocking the next incoming events whilst processing the current one. This behavior is not fixed though: as we will see in Chapter \ref{chap:outoftherabbithole}, it is possible to make use of \code{Scheduler}s to orthogonally introduce concurrency in our reactive systems, altering the control flow of the data processing allowing the user to dispatch the work to other threads.
 

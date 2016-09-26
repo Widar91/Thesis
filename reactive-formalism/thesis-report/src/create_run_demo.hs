@@ -1,18 +1,22 @@
 import Control.Monad.Cont
+import Control.Exception
 import Graphics.UI.GLUT
 
-type Observable a = ContT () IO a
-type Observer a = a -> IO ()
+data Event a = OnNext a | OnError SomeException | OnCompleted
+    deriving Show
 
-observable :: (Observer a -> IO ()) -> Observable a
-observable = ContT
+type Observer   a = Event a -> IO ()
+type Observable a = ContT () IO (Event a)
+
+newObservable :: (Observer a -> IO ()) -> Observable a
+newObservable = ContT
 
 subscribe :: Observable a -> Observer a -> IO ()
 subscribe = runContT 
 
 obs :: Observable Char
-obs = observable $ \obr -> do
-    keyboardCallback $= Just (\c p -> obr c)    
+obs = newObservable $ \observer -> do
+    keyboardCallback $= Just (\c p -> observer (OnNext c))    
 
 display :: DisplayCallback
 display = do
@@ -23,6 +27,6 @@ main :: IO ()
 main = do
   (_progName, _args) <- getArgsAndInitialize
   _window <- createWindow "Observable Keyboard"
-  subscribe obs print
+  subscribe obs (print . show)
   displayCallback $= display
   mainLoop

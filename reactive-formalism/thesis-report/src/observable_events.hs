@@ -2,7 +2,9 @@ import Control.Monad.Cont
 import Control.Exception
 import Data.Maybe
 
-type Event      a = Either SomeException (Maybe a)
+--   Event a = Either SomeException (Maybe a)
+data Event a = OnNext a | OnError SomeException | OnCompleted
+    deriving Show
 
 type Observer   a = Event a -> IO ()
 type Observable a = ContT () IO (Event a)
@@ -14,16 +16,16 @@ subscribe :: Observable a -> Observer a -> IO ()
 subscribe = runContT 
 
 obs = newObservable $ \observer -> 
-    do observer (Right (Just 1))
-       observer (Right (Just 2))
-       observer (Right (Nothing))
+    do observer (OnNext 1)
+       observer (OnNext 2)
+       observer OnCompleted
 
 main :: IO ()
 main = subscribe obs print
 
 {-
 output> 
-    Right (Just 1)
-    Right (Just 2)
-    Right (Nothing)
+    OnNext 1
+    OnNext 1
+    OnCompleted
 -}
