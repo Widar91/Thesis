@@ -10,7 +10,7 @@ import Tiempo
 import Data.Functor.Contravariant
 
 newtype Observable a = Observable 
-    { onSubscribe :: Observer a -> IO Subscription
+    { _subscribe :: Observer a -> IO Subscription
     }
 
 data Observer a = Observer 
@@ -24,10 +24,10 @@ instance Contravariant Observer where
     contramap f ob = Observer (onNext ob . f) (onError ob) (onCompleted ob) (subscription ob)   
 
 instance Functor Observable where
-    fmap f ooa = Observable $ onSubscribe ooa . contramap f
+    fmap f ooa = Observable $ _subscribe ooa . contramap f
 
 lift :: Observable a -> (Observer b -> Observer a) -> Observable b
-lift ooa f = Observable $ \ob -> onSubscribe ooa (f ob)
+lift ooa f = Observable $ \ob -> _subscribe ooa (f ob)
 
 -------------------------------------------------------------------------------
 
@@ -36,7 +36,6 @@ data Subscription = Subscription
     , _isUnsubscribed :: IORef Bool
     , subscriptions   :: IORef [Subscription] 
     }
-
 
 instance Eq Subscription where
     s == t = subscriptions s == subscriptions t
@@ -53,13 +52,6 @@ emptySubscription = createSubscription (return ())
 isUnsubscribed :: Subscription -> IO Bool
 isUnsubscribed s = readIORef $ _isUnsubscribed s
 
-unsubscribe :: Subscription -> IO ()
-unsubscribe s = do
-    writeIORef (_isUnsubscribed s) True
-    onUnsubscribe s
-    subs <- readIORef $ subscriptions s
-    mapM_ unsubscribe subs
-
 addSubscription :: Subscription -> Subscription -> IO ()
 addSubscription s s' = modifyIORef' (subscriptions s) $ \ss -> s':ss
 
@@ -68,26 +60,46 @@ removeSubscription s s' = modifyIORef' (subscriptions s) $ \ss -> delete s' ss
 
 -------------------------------------------------------------------------------
 
-subscribe :: Observable a 
-          -> (a -> IO ())
-          -> (SomeException -> IO ()) 
-          -> IO () 
-          -> IO Subscription
-subscribe obs onNext onError onCompleted = do 
-    s <- createSubscription (print "Ubsubscribed")
-    onSubscribe obs $ Observer (on' s) (oe' s) (oc' s) s
-    where 
-        on' s a = isUnsubscribed s >>= flip unless (onNext a)
-        oe' s e = isUnsubscribed s >>= flip unless (finally (onError e) (unsubscribe s))
-        oc' s   = isUnsubscribed s >>= flip unless (onCompleted >> unsubscribe s)
- 
 observable :: (Observer a -> IO ()) -> Observable a
 observable f = Observable $ \obr -> f obr >> return (subscription obr)
 
-observer :: (a -> IO ()) -> (SomeException -> IO ()) -> IO () -> IO (Observer a)
-observer on oe oc = do 
-    s <- emptySubscription
+observer :: (a -> IO ()) -> (SomeException -> IO ()) -> IO () -> IO () -> IO (Observer a)
+observer on oe oc a = do 
+    s <- createSubscription a
     return $ Observer on oe oc s
+
+subscribe :: Observable a -> Observer a -> IO Subscription
+subscribe obs obr = do 
+    _subscribe obs $ Observer on' oe' oc' s
+    where 
+        s     = subscription obr
+        oc'   = ifSubscribed $ onCompleted obr >> unsubscribe s
+        on' a = ifSubscribed $ onNext obr a
+        oe' e = ifSubscribed $ finally (onError obr e) (unsubscribe s)
+        ifSubscribed a = isUnsubscribed s >>= flip unless a
+
+unsubscribe :: Subscription -> IO ()
+unsubscribe s = do
+    writeIORef (_isUnsubscribed s) True
+    onUnsubscribe s
+    subs <- readIORef $ subscriptions s
+    mapM_ unsubscribe subs
+
+-- subscribe :: Observable a 
+--           -> (a -> IO ())
+--           -> (SomeException -> IO ()) 
+--           -> IO () 
+--           -> IO Subscription
+-- subscribe obs onNext onError onCompleted = do 
+--     s <- emptySubscription
+--     _subscribe obs $ Observer (on' s) (oe' s) (oc' s) s
+--     where 
+--         on' s a = ifSubscribed s (onNext a)
+--         oe' s e = ifSubscribed s (finally (onError e) (unsubscribe s))
+--         oc' s   = ifSubscribed s (onCompleted >> unsubscribe s)
+--         ifSubscribed s a = isUnsubscribed s >>= flip unless a
+
+
 
 -------------------------------------------------------------------------------
 
@@ -112,7 +124,7 @@ newThread = do
 observeOn :: Observable a -> IO Scheduler -> Observable a
 observeOn o sched = Observable $ \obr -> do
     s <- sched
-    onSubscribe o (f s obr)
+    _subscribe o (f s obr)
         where
             f s downstream = Observer 
                 {   onNext       = void . _schedule s . onNext downstream
@@ -145,7 +157,8 @@ infinite = observable $ \obr -> do
 main :: IO ()
 main = do
     hSetBuffering stdout LineBuffering
-    sub <- subscribe obs' on oe oc
+    obr <- observer on oe oc (print "unsubscribed")
+    sub <- subscribe obs' obr
     tid <- myThreadId 
     putStrLn $ "MainThreadId: " ++ show tid
     threadDelay 2000000
