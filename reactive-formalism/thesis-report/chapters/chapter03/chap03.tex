@@ -8,7 +8,7 @@ So far we focused our analysis on the essence of the \code{Observable} interface
 
 In the remained of the discussion, we are going to introduce the \textit{Reactive Contract}, a set of assumptions on the reactive types our library is going to build upon, \textit{Schedulers}, which will allow us to bring concurrency into our reactive equation, \textit{Subscriptions}, used to implement a mechanism for premature stream cancellation and, finally, \textit{Operators}, the means that will make our reactive streams composable.
 
-For the sake of clarity and completeness, the following set of interfaces represents the starting point for our discussion:\footnote{\code{subscribe} has been renamed to \code{\_subscribe} in order to both avoid naming conflicts later on in the discussion and reflect the fact that it should not be used from the outside.}\\
+For the sake of clarity and completeness, the following set of interfaces represents the starting point for our discussion:\footnote{\code{subscribe} has been renamed to \code{\_subscribe} in order to both avoid naming conflicts later on in the discussion and reflect the fact that it should not be used directly by the user.}\\
 
 \hminted 
 newtype Observable a = Observable 
@@ -22,12 +22,37 @@ data Observer a = Observer
 \end{minted}
 \\
 
-It is worth noting that even though the Observable's theoretical foundations lie in the realm of functional programming, the road to make it usable is full of obstacles that are often better tackled using imperative programming features such as state. As much as I personally prefer a functional and pure approach to programming, I will favor, in the rest of the discussion, the solution that most clearly and easily solves the problem, be that functional of imperative.
+It is worth noting that even though the Observable's theoretical foundations lie in the realm of functional programming, the road to make it usable is full of obstacles that are often better tackled using imperative programming features such as state. As much as I personally prefer a functional and pure approach to programming, I will favor, in the rest of the discussion, the solution that most clearly and easily solves the problem, be that functional or imperative.
 
 \section{The Reactive Contract}
 \label{sec:contract}
 
-- Remember best effort cancellation.
+The \code{Observable} and \code{Observer} interfaces are somewhat limited in they expressive power to only argument and return types of they functions. The reactive library we are going to build is going to make more assumptions than the ones expressible by the type system. Although limiting, in a sense, the freedom with which the reactive interfaces can be utilized, this set of assumptions - the contract - greatly facilitates reasoning about and proving correctness of reactive programs\cite{MS2010-RxDesign}.
+
+In later sections, we will refer back to these assumptions and see how they are implemented in our reactive library.
+
+\subsection{Reactive Grammar}
+\label{ass-grammar}
+The fist assumption we are going to introduce involves restrictions on the emission protocol of an \code{Observable}. Events propagated to the \code{Observer} continuation will obey the following regular expression:
+
+\begin{center}\code{onNext* (onError | onCompleted)?}\end{center}
+
+This grammar allows streams to propagate any number - 0 or more - of events though the \code{onNext} function, optionally followed by a message indicating termination, be that natural - though \code{onCompleted} - or due to a failure - though \code{onError}. Note how the optional nature of a termination message allows for infinite streams. 
+
+This assumption is of paramount importance as it guarantees that no events can follow a termination message, allowing the consumer to effectively determine when it is safe to perform resource cleanup operations. 
+
+\subsection{Serialized Messages}
+\label{ass-serialized}
+Later in this chapter we will see how we can introduce concurrency in our reactive library though the use of the \code{Scheduler} interface. From a practical point of view, this means that it will be possible for different messages, to arrive to an \code{Observer} from different execution contexts. If all \code{Observer} instances would have to deal with this scenario, the code in our library would soon become cluttered with concurrency-related housekeeping, making it harder to maintain and reason about.
+
+For this reason, we assume that messages will always arrive in a serialized fashion. As a consequence, operators that deal with messages from different execution contexts - e.g. combiner operators - are required to internally perform serialization.
+
+\subsection{Best Effort Cancellation}
+\label{ass-besteffort}
+The next assumption involves premature stream cancellation. We will later introduce the \code{unsubscribe} function, used to activate the mechanism and stop observing an \code{Observable}; the assumption here is that whenever \code{unsubscribe} is invoked, the library will make a best effort attempt to stop all the ongoing work happening in the background. The reason is simple: it is not always safe to abort work that is being processed - e.g. database writes. Although the library might still complete the pending work, its results are guaranteed not to be propagated to any \code{Observer} that was previously unsubscribed.
+
+\subsection{Resource Cleanup after termination}
+\subsection{Observers are use and throw}
 
 \section{Concurrency with Schedulers}
 
@@ -68,9 +93,7 @@ Rx, on the other hand, completely sheds the notion of time from the notion of re
 
 \subsection{Impact on Operators}
 
-Previously we discussed how introducing concurrency is an orthogonal concept w.r.t. our reactive library. This statement is only partly true and falls short of its promises when we are dealing with combiner operators (see Section \ref{operators}) such as \code{(>>=)} or \code{combineLatest}. These operators will not work at their full potential in a synchronous setting, due to the fact that subscribing to a stream will consume it entirely - or forever process, in the case of an infinite stream - before allowing the operator to subscribe to a different one, effectively making interleaving of events impossible.
-
-The problem is gracefully solved with the introduction of \code{Scheduler}s, which, by allowing for \code{Observable}s to be executed on different contexts, indirectly make it possible for interleaving to happen and for combiner operators to work at their full potential. This comes at a - even though small - cost, which motivates our claim of partial orthogonality: the internal state of a combiner operator needs to be synchronized and carefully handled as, with the introduction of concurrency, it can now be modified from different execution contexts.
+Previously we discussed how concurrency is an orthogonal concept w.r.t. Rx - i.e. introducing concurrency does not affect or pollute the implementation of our reactive library. This statement is only partially true and falls short of its promises when we are dealing with combiner operators (see Section \ref{operators}) such as \code{(>>=)} or \code{combineLatest}. These operators will not work at their full potential in a synchronous setting, due to the fact that subscribing to a stream will consume it entirely - or forever process, in the case of an infinite stream - before allowing the operator to subscribe to a different one, effectively making interleaving of events impossible. The problem is gracefully solved with the introduction of \code{Scheduler}s, which, by allowing for \code{Observable}s to be executed on different contexts, indirectly make it possible for interleaving to happen and for combiner operators to work at their full potential. This comes at a small cost, which motivates our claim of partial orthogonality: combiners operators are required to perform message serialization (see assumption \ref{ass-serialized}) as well as internal state synchronization as, with the introduction of concurrency, messages and state changes can originate from different execution contexts.
 
 
 \section{Subscriptions}
