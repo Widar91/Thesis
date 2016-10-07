@@ -27,17 +27,17 @@ It is worth noting that even though the Observable's theoretical foundations lie
 \section{The Reactive Contract}
 \label{sec:contract}
 
-The \code{Observable} and \code{Observer} interfaces are somewhat limited in they expressive power to only argument and return types of they functions. The reactive library we are going to build is going to make more assumptions than the ones expressible by the type system. Although limiting, in a sense, the freedom with which the reactive interfaces can be utilized, this set of assumptions - the contract - greatly facilitates reasoning about and proving correctness of reactive programs\cite{MS2010-RxDesign}.
+The \code{Observable} and \code{Observer} interfaces are somewhat limited, in they expressive power, to only argument and return types of they functions. The reactive library we are going to build is going to make more assumptions than the ones expressible by the type system. Although limiting, in a sense, the freedom with which the reactive interfaces can be utilized, this set of assumptions - the contract - greatly facilitates reasoning about and proving correctness of reactive programs\cite{MS2010-RxDesign}.
 
-In later sections, we will refer back to these assumptions and see how they are implemented in our reactive library.
+In later sections, we will refer back to these assumptions when discussing the actual implementation of our reactive library.
 
 \subsection{Reactive Grammar}
 \label{ass-grammar}
-The fist assumption we are going to introduce involves restrictions on the emission protocol of an \code{Observable}. Events propagated to the \code{Observer} continuation will obey the following regular expression:
+The first assumption we are going to introduce involves restrictions on the emission protocol of an \code{Observable}. Events propagated to the \code{Observer} continuation will obey the following regular expression:
 
 \begin{center}\code{onNext* (onError | onCompleted)?}\end{center}
 
-This grammar allows streams to propagate any number - 0 or more - of events though the \code{onNext} function, optionally followed by a message indicating termination, be that natural - though \code{onCompleted} - or due to a failure - though \code{onError}. Note how the optional nature of a termination message allows for infinite streams. 
+This grammar allows streams to propagate any number - 0 or more - of events though the \code{onNext} function, optionally followed by a message indicating termination, be that natural - though \code{onCompleted} - or due to a failure - though \code{onError}. Note how the optional nature of a termination message allows for the existence of infinite streams. 
 
 This assumption is of paramount importance as it guarantees that no events can follow a termination message, allowing the consumer to effectively determine when it is safe to perform resource cleanup operations. 
 
@@ -45,16 +45,17 @@ This assumption is of paramount importance as it guarantees that no events can f
 \label{ass-serialized}
 Later in this chapter we will see how we can introduce concurrency in our reactive library though the use of the \code{Scheduler} interface. From a practical point of view, this means that it will be possible for different messages, to arrive to an \code{Observer} from different execution contexts. If all \code{Observer} instances would have to deal with this scenario, the code in our library would soon become cluttered with concurrency-related housekeeping, making it harder to maintain and reason about.
 
-For this reason, we assume that messages will always arrive in a serialized fashion. As a consequence, operators that deal with messages from different execution contexts - e.g. combiner operators - are required to internally perform serialization.
+For this reason, we assume that messages will always arrive in a serialized fashion. As a consequence, operators that deal with events from different execution contexts - e.g. combiner operators - are required to internally perform serialization.
 
 \subsection{Best Effort Cancellation}
 \label{ass-besteffort}
-The next assumption involves premature stream cancellation. We will later introduce the \code{unsubscribe} function, used to activate the mechanism and stop observing an \code{Observable}; the assumption here is that whenever \code{unsubscribe} is invoked, the library will make a best effort attempt to stop all the ongoing work happening in the background. The reason is simple: it is not always safe to abort work that is being processed - e.g. database writes. Although the library might still complete the pending work, its results are guaranteed not to be propagated to any \code{Observer} that was previously unsubscribed.
+The next assumption involves premature stream cancellation. We will later introduce the \code{unsubscribe} function, used to activate this mechanism and stop observing an \code{Observable}; the assumption here is that whenever \code{unsubscribe} is invoked, the library will make a best effort attempt to stop all the ongoing work happening in the background. The reason is simple: it is not always safe to abort work that is being processed - e.g. database writes. Although the library might still complete the execution of pending work, its results are guaranteed not to be propagated to any \code{Observer} that was previously unsubscribed.
 
 \subsection{Resource Cleanup after termination}
 \subsection{Observers are use and throw}
 
 \section{Concurrency with Schedulers}
+\label{schedulers}
 
 At the end of Section \ref{obscont} we discussed how \code{Observable}s, by default, handle data by means of a synchronous pipeline, blocking the processing of successive elements via the call stack. It is worth mentioning again how this synchronous processing does not affect the ability of \code{Observable}s to handle asynchronous data.
 
@@ -70,7 +71,7 @@ The \code{Scheduler} interface looks like the following \footnote{The interface 
 
 To better understand \code{Scheduler}s, let us present the implementation of one of them, the newThread scheduler, which allows us to dispatch action to a new, dedicated thread.\\
 
-\haskellcode[firstline=36,lastline=47]{src/scheduler.hs}\\
+\haskellcode[firstline=36,lastline=48]{src/scheduler.hs}\\
 
 The \code{newThread} function gives us a side effectful way of creating a \code{Scheduler} by generating a new execution context - i.e. a new thread - and setting up the necessary tools for safe communication with it. The \code{Scheduler} functions we are provided, on the other hand, simply write the input \code{IO} action to the channel and return, effectively dispatching the execution of those actions to the new thread. 
 
@@ -80,9 +81,9 @@ The only thing missing now is a way for us to combine the functionality of these
 
 For the sake of completeness and understandability, the following snippet contains a simple implementation of the \code{observeOn} operator together with a sample usage.\\
 
-\haskellcode[firstline=49,lastline=58]{src/scheduler.hs}\\
+\haskellcode[firstline=50,lastline=59]{src/scheduler.hs}\\
 
-\haskellcode[firstline=60]{src/scheduler.hs}\\
+\haskellcode[firstline=61]{src/scheduler.hs}\\
 
 
 \subsection{A note on the concept of time}
@@ -99,22 +100,14 @@ Previously we discussed how concurrency is an orthogonal concept w.r.t. Rx - i.e
 \section{Subscriptions}
 \label{sec:subscriptions}
 
------------------------------------------------------------------------
+With schedulers, we are now able to handle observable streams from different execution contexts. The next step in making Rx ready for a production environment is to add a mechanism that will allow us to stop a stream from anywhere in our program, whenever we don't require it's data anymore - i.e. a mechanism that will allow the user to communicate to the \code{Observable} that one of it's \code{Observer}s is no longer interested in receiving its events. 
 
-- now purely practical concern: stop stream while processing from anywhere, tell observable I dont want to observe anymore, i.e. the observer is done.
-- what is it: IO action/s | in theory can be seen as readerT, the subscription is always the same one, but you can add stuff to it. 
-- who does it belong to: the observer, you get one for each subscribe.
-- how does it work: call unsubscribe, best effort stop work
-- impact on operators: a need for children -> now you can free resources 
-- impact on schedulers: kill the thread
-- write that it only works now that we have schedulers
-- edge enforcement
-- subject + takeuntil
-- why cannot be monoid, we need remove
+\todo[inline]{Is the following clear?}
+We discussed in the previous section how schedulers effectively boost the expressive power of our reactive expressions by introducing concurrency and interleaving among events originating from different streams. Introducing a cancellation mechanism, on the other hand, is a purely practical concern: although very useful from a practical perspective, especially in the context of resource management, it doesn't impact expressive power from a reactive point of view.
 
------------------------------------------------------------------------
+The means by which we are going to introduce a cancellation mechanism inside our reactive equation is though the \code{Subscription} datatype. From a functionality point of view, what we are aiming for is for the \code{\_subscribe} function to hand back a \code{Subscription} whenever invoked; users will later be able to use this \code{Subscription} in order to prematurely cease the observation of a stream.
 
-With schedulers, we are now able to handle observable streams from different execution contexts. The next step is to add a mechanism that will allow us to stop a stream from anywhere in our program, whenever we don't require it's data - i.e. a mechanism to tell the \code{Observable} that one of it's \code{Observer}s is not interested in receiving events anymore. We are going to do so by augmenting our informal definition of \code{Observable} from section \ref{obscont} with a new function \code{(\%)}, which incorporates the notion of a cancellation mechanism through the \code{Subscription} datatype:\\
+The first step in designing a new feature is to understand how the already existing interfaces will be affected by the newly introduced one; starting from our informal definition of \code{Observable} from section \ref{obscont}, let's now define a new function \code{(\%)}, which incorporates the notion of returning a \code{Subscription} and see how this is going to affect our types:\\
 
 \hminted
 %a  :: a -> IO Subscription
@@ -124,9 +117,7 @@ With schedulers, we are now able to handle observable streams from different exe
 
 With this change, each execution of the \code{Observable} function now returns a \code{Subscription}, a means for the user to prematurely terminate the processing of the stream. 
 
-We discussed in the previous section how schedulers effectively boost the expressive power of our reactive expressions by introducing concurrency and interleaving among events originating from different streams. Introducing a cancellation mechanism, on the other hand, is a purely practical concern: although very useful from a practical perspective, especially in the context of resource management, it doesn't impact expressive power from a reactive point of view.
-
-The first step in designing this new feature is to understand how the already existing interfaces will be affected by the newly introduced one; we just saw how the \code{\_subscribe} function should now return an action resulting in an instance of type \code{Subscription}. The next question is the following: to whom does a \code{Subscription} belongs to? The key observation in addressing this question is that an \code{Observable} can be subscribed to by multiple \code{Observer}s; our goal is to provide a mechanism that will allow for a fine-grained control over which \code{Observer} is supposed to stop receiving events. The answer is then straightforward: the notion of subscription is tight to that of observer. The following snippet incorporates this notion:\\
+The next question is the following: to whom does a \code{Subscription} belongs to? The key observation in addressing this question is that an \code{Observable} can be subscribed to by multiple \code{Observer}s; our goal is to provide a mechanism that will allow for a fine-grained control over which \code{Observer} is supposed to stop receiving events. The answer is then straightforward: the notion of subscription is tight to that of observer. The following snippet reflects this observation:\\
 
 \hminted
 $a  :: (Subscription, Either SomeException (Maybe a) -> IO ())
@@ -154,11 +145,52 @@ data Subscription = Subscription
 
 We will see, later on, how we can further augment this interface in order to incorporate additional functionality useful for internal operator coordination as well as management of schedulers. 
 
-It's now time to introduce the two functions at the hearth of the whole cancellation mechanism: \code{unsubscribe} will take care of modifying the state carried by the \code{Subscription} - i.e. setting \code{\_isUnsubscribed} to \code{False} - whereas \code{subscribe} will act as a proxy for the \code{\_subscribe} function from \code{Observable}, calling it with a special \code{Observer} which will prevent events from propagating to the downstream once the \code{Subscription} has been unsubscribed. Note how, for this mechanism to work, it is necessary the two \code{Observer}s to share the same \code{Subscription}.
+It's now time to introduce the two functions at the hearth of the whole cancellation mechanism: \code{unsubscribe} will take care of modifying the state carried by the \code{Subscription} - i.e. setting \code{\_isUnsubscribed} to \code{True} -  as well as execute the associated \code{IO ()} action, whereas \code{subscribe} will simply act as a proxy for the original \code{\_subscribe} function from the \code{Observable} interface.
+
+%It's now time to introduce the two functions at the hearth of the whole cancellation mechanism: \code{unsubscribe} will take care of modifying the state carried by the \code{Subscription} - i.e. setting \code{\_isUnsubscribed} to \code{True} - as well as execute the associated \code{IO ()} action, whereas \code{subscribe} will act as a proxy for the original \code{\_subscribe} function from \code{Observable}, calling it with a special \code{Observer} as an argument, which will prevent events from propagating to the downstream once the \code{Subscription} has been unsubscribed. Note how, for this mechanism to work, it is necessary for the two \code{Observer}s to share the same \code{Subscription}.
 
 \haskellcode[firstline=71,lastline=84]{src/subsciption.hs}\\
- 
 
+The \code{safeObserver} utilized by the \code{subscribe} function is of crucial importance to the functionality of our library: its implementation, in fact, includes two of the reactive contract assumptions introduces previously. The safe onNext/onError/onCompleted functions implement the subscription mechanism, preventing, thorough the \code{ifSubscribed} function, events from propagating to the underlying \code{Observer}, once the related \code{Subscription} has been unsubscribed. By doing so, it is easy to see how assumption \ref{ass-besteffort} is satisfied: unsubscribing from a stream does not force the stop of any outstanding work, yet it is made sure that any result produced after unsubscribing, if any, will not be delivered to the downstream \code{Observer} - i.e. the \code{Observer} supplied by the user. Additionally, \code{safeObserver} allows the enforcement of the reactive grammar seen in assumption \ref{ass-grammar}; this is done by calling \code{unsubscribe} as soon as the first termination message - be that \code{onError} or \code{onCompleted} - arrives, effectively preventing any additional event from being propagated.
+
+Now that we have a clear idea of how the subscription mechanism is supposed to work and how it is integrated into our library, let's take a look at a few observations and concerns that involve it. 
+
+\subsection{Impact on Operators}
+
+\subsection{Impact on Schedulers}
+
+In the previous sections we discussed a simplified version of the \code{Scheduler} interface that was glossing, without loss of generality, over details regarding \code{Subscription}s. In practice, it is useful to associate \code{Subscription}s not only to \code{Observer}s but to \code{Scheduler}s as well. \\
+
+\haskellcode[firstline=95,lastline=99]{src/scheduler_subscription.hs}\\
+
+With this version of the interface, each scheduled action returns a \code{Subscription}, offering fine grained control over the actions to be executed; at the same time, a \code{Subscription} is also associated to the \code{Scheduler} as a whole, allowing the user to perform cleanup actions on the code{Scheduler} itself once code{unsubscribe} is called. This is best shown with a new example implementation of the newThread scheduler and observeOn operator:\\
+
+\haskellcode[firstline=101,lastline=130]{src/scheduler_subscription.hs}\\
+
+The code is mostly equal to the one presented in section \ref{schedulers}. The most relevant change can be found at line 107, where we create a subscription for the newThread scheduler with an action that simply kills the thread\footnote{Absolutely not safe, but it's good enough for the sake of our example.}. On line 122 we then add this subscription to the one carried by the downstream observer. In this way, unsubscribing from the downstream subscription will trigger a waterfall effect that will eventually unsubscribing the scheduler's one as well, effectively killing the thread associated to it.
+
+On a last note regarding the relationship between schedulers and subscriptions, it is worth mentioning how the subscription mechanism only works in the presence of schedules. As we mentioned before, in fact, Rx is synchronous by default in the processing of its data. This means that the program would return from the invocation of the \code{subscribe} function only after it has fully processed the stream, effectively rendering the subscription mechanism ineffective, as it would not be possible to invoke \code{unsubscribe} whilst the \code{Observable} is active. With the introduction of schedules and different execution contexts, this problem disappears and the mechanism works as intended.
+
+\subsection{Formalizing Subscriptions}
+
+
+-----------------------------------------------------------------------
+
+- what is it: IO action/s | in theory can be seen as readerT, the subscription is always the same one, but you can add stuff to it. 
+
+- impact on operators: a need for children -> now you can free resources 
+
+- impact on schedulers: kill the thread
+
+- edge enforcement
+
+- subject + takeuntil
+
+- why cannot be monoid, we need remove
+
+-----------------------------------------------------------------------
+
+--------------------------------------------------\\
 So, what is a \code{Subscription} then? Conceptually, it could be a simple boolean recording whether an \code{Observer} is unsubscribed from the stream. In practice it is useful to augment it with some additional information. First of all, \code{Subscription}s can be used for resource cleanup at the termination - either forced or natural - of a stream. It is therefore useful to associate an \code{IO ()} action to the datatype, which will represent the computation to be executed once the stream is unsubscribed from. Another improvement is making the type recursive, i.e. allowing \code{Subscription}s to contain, add and remove children subscriptions. This will be extremely useful for internal coordination of operators such as \code{(>>=)} and for resource management in the context of schedulers - more on this in the next sub-subsections.
 
 \todo[inline]{We could just chain IO actions, but then we cant remove, which can lead to stack overflow with huge thunks in flatmap.}

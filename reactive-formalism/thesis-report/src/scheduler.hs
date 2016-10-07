@@ -30,7 +30,7 @@ lift ooa f = Observable $ \ob -> subscribe ooa (f ob)
 
 data Scheduler = Scheduler 
     { _schedule      :: IO () -> IO ()
-    , _scheduleDelay :: TimeInterval -> IO () -> IO ()
+    , _scheduleDelay :: IO () -> TimeInterval -> IO ()
     }
 
 newThread :: IO Scheduler
@@ -39,12 +39,13 @@ newThread = do
     tid <- forkIO $ forever $ do
         join $ atomically $ readTChan ch
         yield
-    return $ Scheduler (schedule_ ch) (scheduleDelay_ ch)
+    return $ Scheduler (schedule ch) (scheduleD ch)
         where
-            schedule_ ch io = atomically $ writeTChan ch io
-            scheduleDelay_ ch delay io = do
-                threadDelay $ toMicroSeconds delay
+            schedule  ch io = 
                 atomically $ writeTChan ch io
+            scheduleD ch io d = do
+                threadDelay $ toMicroSeconds d
+                schedule ch io
 
 observeOn :: Observable a -> IO Scheduler -> Observable a
 observeOn o sched = Observable $ \obr -> do

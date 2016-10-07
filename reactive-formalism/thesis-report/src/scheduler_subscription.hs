@@ -1,14 +1,3 @@
-import System.IO
-import Control.Monad
-import Data.Time
-import Data.IORef
-import Data.List
-import Control.Concurrent.STM
-import Control.Exception
-import Control.Concurrent
-import Tiempo
-import Data.Functor.Contravariant
-
 newtype Observable a = Observable 
     { _subscribe :: Observer a -> IO Subscription
     }
@@ -104,8 +93,9 @@ unsubscribe s = do
 -------------------------------------------------------------------------------
 
 data Scheduler = Scheduler 
-    { _schedule      :: IO () -> IO ()
-    , _scheduleDelay :: TimeInterval -> IO () -> IO ()
+    { _schedule      :: IO () -> IO Subscription
+    , _scheduleDelay :: IO () -> TimeInterval -> IO Subscription
+    , subscription  :: Subscription
     }
 
 newThread :: IO Scheduler
@@ -114,22 +104,28 @@ newThread = do
     tid <- forkIO $ forever $ do
         join $ atomically $ readTChan ch
         yield
-    return $ Scheduler (schedule_ ch) (scheduleDelay_ ch)
+    sub <- createSubscription (killThread tid)
+
+    return $ Scheduler (schedule ch) (scheduleD ch) sub
         where
-            schedule_ ch io = atomically $ writeTChan ch io
-            scheduleDelay_ ch delay io = do
-                threadDelay $ toMicroSeconds delay
+            schedule  ch io = 
                 atomically $ writeTChan ch io
+                emptySubscription
+            scheduleD ch io d = do
+                threadDelay $ toMicroSeconds d
+                schedule_ ch io
 
 observeOn :: Observable a -> IO Scheduler -> Observable a
-observeOn o sched = Observable $ \obr -> do
-    s <- sched
+observeOn o schedIO = Observable $ \obr -> do
+    sched <- schedIO
+    sub   <- subscription obr 
+    liftIO $ addSubscription sub (subscription sched)
     _subscribe o (f s obr)
         where
             f s downstream = Observer 
-                {   onNext       = void . _schedule s . onNext downstream
-                ,   onError      = void . _schedule s . onError downstream
-                ,   onCompleted  = void . _schedule s $ onCompleted downstream
+                {   onNext       = void . _schedule sched . onNext downstream
+                ,   onError      = void . _schedule sched . onError downstream
+                ,   onCompleted  = void . _schedule sched $ onCompleted downstream
                 ,   subscription = subscription downstream
                 }
 
