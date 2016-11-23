@@ -36,7 +36,7 @@ By merging these considerations with the notion of coproducts and Haskell's \cod
 
 Note how, theoretically, \code{getIterator} could also throw an exception. We assume here, without loss of generality, that the function will never throw and will always be able to return an \code{Iterator} instance.
 
-The next step is to forget about class instances and express our interfaces as simple types.\\
+The next step is to forget about data types and express our interfaces as simple types.\\
 
 \haskellcode[firstline=1,lastline=2]{src/iterable_types.hs}\\
 
@@ -50,26 +50,37 @@ When looking at the \code{Iterator} type from an object oriented perspective, th
 
 This correspondence will turn out to be very insightful later on in our discussion, where we will observe that \code{Observable} is nothing more that a setter of setters, another instance of duality in our formalization. 
 
-When looking at the relation between the \code{Iterator} type and its base component, \code{a}, we can observe how they are bound by a covariance relation:\\
-\begin{displaymath}
-\frac{A <: B}{(() \rightarrow A) <: (() \rightarrow B)} 
-\end{displaymath}
+When looking at the relation between the \code{Iterator} type and its base component, \code{a}, we can observe how they are bound by a covariant relation:\\
 
-\todo[inline]{Change this part, reflect example in talk. Add recycling machine afterwards with observable.}
-The intuition can be easily understood when we think of an iterable as a soft-drink vending machine, i.e. a function which, whenever called, will give back a soft-drink:\\ 
-\begin{displaymath}
-\frac{Coke <: Soft Drink}{(() \rightarrow Coke) <: (() \rightarrow Soft Drink)} 
-\end{displaymath}
+\hminted
+                                   A <: B
+                      ----------------------------------
+                          () -> IO A <: () -> IO B
+\end{minted}
+\\
 
-If coke is a subtype of soft-drink, then whenever I am asked for a soft-drink vending machine, I can hand out a coke vending machine without incurring in any troubles with the person who asked, as that machine will correctly provide soft drinks whenever prompted for one.
+The intuition can be easily understood when we think of an iterator as a drink vending machine, i.e. a function which, whenever called, will give back a drink:\\ 
 
-With \code{Iterable} being a getter itself, it should be clear how covariance plays the same role as with \code{Iterator}.
+\hminted
+                                Coke <: Drink
+                      ---------------------------------
+                       VendingM Coke <: VendingM Drink
+\end{minted}
+\\
 
-To formally prove the intuition of a covariant relation, we instantiate the \code{Iterable}/\code{Iterator} types to a covariant \code{Functor}.\\
+If coke is a subtype of drink, then whenever I am asked for a drink vending machine, I can hand out a coke vending machine without incurring in any troubles with the person who asked, as that machine will correctly provide drinks - even though they will always be coke - whenever prompted for one.
 
-\haskellcode[firstline=3]{src/iterable_functor.hs}\\
+With \code{Iterator} being a getter itself, it should be clear how covariance plays the same role as with \code{Iterable}.
 
-We will see in the next section how these concepts are relevant in expressing and motivating the duality between Iterables and Observables.
+To formally prove the intuition of a covariant relation, we instantiate the \code{Iterable}/\code{Iterator} types to a covariant \code{Functor} and prove its laws in the following snippet.\\
+
+%\inputhaskell{src/iterable_functor.hs}
+
+\haskellcode[firstline=3, lastline=50]{src/iterable_functor.hs}\\
+
+\haskellcode[firstline=52]{src/iterable_functor.hs}\\
+
+For the sake of completeness, it is worth mentioning that \code{Iterable} is, among others, also an instance of Applicative Functor and Monad. Although certainly interesting from a theoretical perspective, showing these instances and proving the associated laws goes beyond the scope of this work. Nontheless, we will see in the next section how these concepts are relevant in expressing and motivating the duality between Iterables and Observables.
 
 \section{Applying Duality}
 \label{sec:applyingduality}
@@ -82,19 +93,31 @@ Starting from the fact that the \code{Iterable} interface embodies the idea of i
 
 Note how the side effects are bound to function application rather than values, hence their flipped position in the \code{Observable} type.
 
-The reader acquainted with functional programming will easily see the resemblance between the \code{Observable} type and a CPS function (See Appendice \ref{app:a}).\\
-
-\haskellcode{src/obs_cont.hs}\\
-
-It is clear how an \code{Observable} is nothing more than a CPS function where the result type \code{r} is instantiated to \code{IO ()}. To convince ourselves of this equivalence, let's think about the definition of a CPS function, i.e. a suspended computation which, given another function - the continuation - as argument, will produce its final result. This definition suits perfectly the idea behind \code{Observable} discussed in Section \ref{subsec:rx}: a function which will do nothing - i.e. is suspended - until it is subscribed to by an \code{Observer}.
-
-A continuation, on the other hand, represents the future of the computation, a function from an intermediate result to the final result\cite{newbern-monads}; in the context of \code{Observable}s, the continuation represents the \code{Observer}, a function specifying what will happen to a value produced by the \code{Observable}, whenever it will become available, that is, whenever it will be pushed into the \code{Observer}. Since a continuation can be called multiple times within the surrounding CPS context, it is easy to see how this mathematical concept allows us to deal with multiple values produced at different times in the future.
+The newly derived types are relatively easy to read and understand: \code{Observer} is simply a function that, given a value of type \code{a} will handle it somehow, producing side effects; the \code{Observable}, on the other hand, is responsible for producing such values of type \code{a} and feeding them to the \code{Observer} it has been given as an argument.
 
 In the previous section we have discussed many properties associated with \code{Iterable}s. Let's analyze now how these properties translate under dualisation and how they affect our new derived interface, the \code{Observable}.
 
 First, moving from the observation that an \code{Iterable} is a getter of a getter, we can observe that the \code{Observable} plays exactly the opposite role, that is, a setter of a setter. The type \code{Observer :: a -> IO ()} represents, in fact, the essence of a setter function, whereas the \code{Observable} consists in nothing more than the simple task of applying the observer function to itself, producing a setter of setters. 
 
-While the discussion about \code{Iterable}'s covariance was quite intuitive, things get a little bit more complicated when analyzing \code{Observable}s. Let's start by informally introducing the notion of positivity and negativity of types: we can interpret a function of type \code{f :: a -> b} as a way for us to produce a value of type \code{b}. In this context, \code{b} is considered to be positive with respect to the type \code{a -> b}. On the other hand, in order to apply the function, we are going to need a value of type \code{a}, which we will need to get from somewhere else; \code{a} is therefore considered to be negative w.r.t. the function type, as the function introduces a need for this value in order to produce a result. The point of this distinction is that positive type variables introduce a covariant relation between base and function type whereas negative type variables introduce a contravariant relation.
+While the discussion about \code{Iterable}'s covariance was quite intuitive, things get a little bit more complicated when analyzing \code{Observable}s. Referring back to our previous example involving cokes and drinks, we can now think of the \code{Observer} as a a recycling machine:\\
+
+\hminted
+                                Coke <: Drink
+                    -----------------------------------
+                    RecyclingM Drink <: RecyclingM Coke
+\end{minted}
+\\
+
+Our intuition tells us that this time, a recycling machine that can only handle coke cannot be used in place of one that needs to handle any type of drinks, as it would fail at its task whenever a drink that is not a coke is fed into it. On the other hand, a recycling machine that works for any type of drink can be safely used in place of one that needs to handle cokes. This intuition bounds \code{Observer} and its base type \code{a} by a contravariant relation:\\
+
+\hminted
+                                   A <: B
+                      ----------------------------------
+                          A -> IO () <: B -> IO ()
+\end{minted}
+\\
+
+A more theoretical take on the matter involves the notion of type's positivity and negativity: we can interpret a function of type \code{f :: a -> b} as a way for us to produce a value of type \code{b}. In this context, \code{b} is considered to be positive with respect to the type \code{a -> b}. On the other hand, in order to apply the function, we are going to need a value of type \code{a}, which we will need to get from somewhere else; \code{a} is therefore considered to be negative w.r.t. the function type, as the function introduces a need for this value in order to produce a result. The point of this distinction is that positive type variables introduce a covariant relation between base and function type whereas negative type variables introduce a contravariant relation.
 
 Analyzing \code{Iterable} within this framework is easy, the \code{Iterator} function contains a single type parameter found in a positive position, therefore resulting in a covariant relation; being the \code{Iterable} the result of applying the \code{Iterator} function to itself, we again result in a covariant relation w.r.t. the type parameter \code{a}.
 
@@ -108,9 +131,31 @@ Before we formalize this claim, let's convince ourselves that \code{Observable}s
 
 It is clear from this implementation that \code{randomValueObs} indeed produces a value of type \code{Int}, whereas the \code{Observer} introduces a need for such value in order to be applied. For more details on the positivity and negativity of functions and type variables, see \cite{pos-neg}\cite{pos-neg2}.
 
-Just as we did with \code{Iterable/Iterator}, we can formally prove the covariant and contravariant relations between \code{Observable/Observer} and their base type \code{a} by instantiating them to \code{Functor} and \code{Contravariant} - i.e. Cofunctor - respectively.\\
+Just as we did with \code{Iterable/Iterator}, we can formally prove the covariant and contravariant relations between \code{Observable/Observer} and their base type \code{a} by instantiating them to \code{Functor} and \code{Contravariant (Functor)} respectively, as well as proving the laws.\\
 
-\haskellcode[firstline=3]{src/observable_functor.hs}\\
+\haskellcode[firstline=3,lastline=30]{src/observable_functor.hs}\\
+\haskellcode[firstline=32]{src/observable_functor.hs}\\
+
+The reader acquainted with functional programming will easily see the resemblance between the \code{Observable} type and a CPS function (See Appendice \ref{app:a}).\\
+
+\haskellcode{src/obs_cont.hs}\\
+
+It is clear how an \code{Observable} is nothing more than a special case of a CPS function where the result type \code{r} is instantiated to \code{IO ()}. To convince ourselves of this equivalence, let's think about the definition of a CPS function, i.e. a suspended computation which, given another function - the continuation - as argument, will produce its final result. This definition suits perfectly the idea behind \code{Observable} discussed in Section \ref{subsec:rx}: a function which will do nothing - i.e. is suspended - until it is subscribed to by an \code{Observer}.
+
+A continuation, on the other hand, represents the future of the computation, a function from an intermediate result to the final result\cite{newbern-monads}; in the context of \code{Observable}s, the continuation represents the \code{Observer}, a function specifying what will happen to a value produced by the \code{Observable}, whenever it will become available, that is, whenever it will be pushed into the \code{Observer}. Since a continuation can be called multiple times within the surrounding CPS context, it is easy to see how this mathematical concept allows us to deal with multiple values produced at different times in the future.
+
+We can prove our claim by implementing the \code{Observable} interface using Haskell's Continuation Monad Transformer and observing how the unwrapping function \code{runContT} effectively hands us back our original type:
+
+\hminted
+newtype ContT r m a :: * -> (* -> *) -> * -> *
+runContT :: ContT r m a -> (a -> m r) -> m r
+
+type Observable a = ContT () IO a
+runContT :: ContT () IO a -> (a -> IO ()) -> IO ()
+\end{minted}
+
+This equivalence is very important as it allows us to claim an instance of Applicative Functor and Monad for our derived type, \code{Observable}. These instances are inherited for free from the continuation monad, sparing us the tedious task of proving all the related laws.
+
 
 \section{Termination and Error Handling}
 \label{termerr}
@@ -129,7 +174,7 @@ Unfortunately, this type is very hard to read as well as understand for someone 
 
 The \code{Observable} is now a special version of a CPS function accepting three continuation functions - embedded inside the \code{Observer} -, one for each effect an \code{Observable} can propagate: value, termination or exception.
 
-\section{Observables are Continuations}
+\section{Formalizing Observables}
 \label{obscont}
 
 Throughout our discussion, we have mentioned multiple times the connection between \code{Observable} and CPS functions. In this section we are going to explore this matter and see how we these two concepts are effectively the same thing.

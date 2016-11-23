@@ -76,7 +76,7 @@ subscribe obs obr = _subscribe obs safeObserver
         safeOn a     = ifSubscribed $ onNext obr a
         safeOe e     = ifSubscribed $ finally (onError obr e) (unsubscribe s)
         safeOc       = ifSubscribed $ onCompleted obr >> unsubscribe s
-        ifSubscribed a = isUnsubscribed s >>= flip unless a
+        ifSubscribed = (>>=) (isUnsubscribed s) . flip unless
 
 unsubscribe :: Subscription -> IO ()
 unsubscribe s = do

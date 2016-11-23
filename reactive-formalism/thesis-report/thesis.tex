@@ -275,6 +275,27 @@ showspaces=false,
 showtabs =false,
 texcl=false
 }
+
+\newcommand{\inputhaskell}[1]{
+\inputminted[
+bgcolor=mintedbackground,
+linenos=true,
+numberblanklines=true,
+numbersep=10pt,
+gobble=0,
+frame=lines,
+framerule=0.4pt,
+framesep=4mm,
+funcnamehighlighting=false,
+tabsize=4,
+obeytabs=false,
+mathescape=false
+samepage=false, %with this setting you can force the list to appear on the same page
+showspaces=false,
+showtabs =false,
+texcl=false
+]{haskell}{#1}
+}
 				
 
 %Reduce widows  (the last line of a paragraph at the start of a page) and orphans 
@@ -468,6 +489,9 @@ texcl=false
 \clearemptydoublepage
 
 \include{chapters/chapter03/chap03}
+\clearemptydoublepage
+
+\include{chapters/chapter04/chap04}
 \clearemptydoublepage
 
 \listoftodos
