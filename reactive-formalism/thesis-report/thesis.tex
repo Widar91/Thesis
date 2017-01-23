@@ -201,6 +201,7 @@
 		       petri,topaths}				%To use diverse features from tikz		
 %		
 
+\usepackage{floatpag}
 % Todo package
 \usepackage[colorinlistoftodos,prependcaption,textsize=tiny]{todonotes}
 %
@@ -214,13 +215,13 @@
 %Minted package/ Code formatting
 \usepackage{xcolor}
 \usepackage{minted}
-%\usemintedstyle{colorful}	
+\usemintedstyle{colorful}	
 
 \definecolor{mintedbackground}{rgb}{0.95,0.95,0.95}
 \newcommand{\code}[1]{\colorbox{mintedbackground}{\texttt{#1}}}
 
 \newcommand{\hminted}{\begin{minted}[
-bgcolor=mintedbackground,
+%bgcolor=mintedbackground,
 linenos=true,
 numberblanklines=true,
 numbersep=10pt,
@@ -239,7 +240,7 @@ texcl=false
 ]{haskell}}
 
 \newcommand{\hmint}[1]{\mint[
-bgcolor=mintedbackground,
+%bgcolor=mintedbackground,
 linenos=true,
 numberblanklines=true,
 numbersep=10pt,
@@ -258,7 +259,7 @@ texcl=false
 ]{haskell}#1}
 
 \newmintedfile[haskellcode]{haskell}{
-bgcolor=mintedbackground,
+%bgcolor=mintedbackground,
 linenos=true,
 numberblanklines=true,
 numbersep=10pt,
@@ -278,7 +279,7 @@ texcl=false
 
 \newcommand{\inputhaskell}[1]{
 \inputminted[
-bgcolor=mintedbackground,
+%bgcolor=mintedbackground,
 linenos=true,
 numberblanklines=true,
 numbersep=10pt,

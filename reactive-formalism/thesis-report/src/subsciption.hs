@@ -3,6 +3,7 @@ import Control.Monad
 import Data.Time
 import Data.IORef
 import Data.List
+import Data.Maybe
 import Control.Concurrent.STM
 import Control.Exception
 import Control.Concurrent
@@ -12,7 +13,6 @@ import Data.Functor.Contravariant
 newtype Observable a = Observable 
     { _subscribe :: Observer a -> IO Subscription
     }
-
 data Observer a = Observer 
     { onNext       :: a -> IO ()
     , onError      :: SomeException -> IO ()
@@ -20,14 +20,15 @@ data Observer a = Observer
     , subscription :: Subscription
     }
 
+lift :: (Observer b -> Observer a) -> Observable a -> Observable b
+lift f ooa = Observable $ \ob -> _subscribe ooa (f ob)
+
 instance Contravariant Observer where 
-    contramap f ob = Observer (onNext ob . f) (onError ob) (onCompleted ob) (subscription ob)   
+    contramap f ob = 
+        Observer (onNext ob . f) (onError ob) (onCompleted ob) (subscription ob)   
 
 instance Functor Observable where
-    fmap f ooa = Observable $ _subscribe ooa . contramap f
-
-lift :: Observable a -> (Observer b -> Observer a) -> Observable b
-lift ooa f = Observable $ \ob -> _subscribe ooa (f ob)
+    fmap f = lift (contramap f)
 
 -------------------------------------------------------------------------------
 
@@ -135,6 +136,113 @@ observeOn o sched = Observable $ \obr -> do
 
 -------------------------------------------------------------------------------
 
+instance Applicative Observable where
+    pure x = Observable $ \obr -> do
+        onNext obr x 
+        onCompleted obr 
+        return $ subscription obr
+    (<*>) = combineLatest ($) 
+
+combineLatest :: (a -> b -> r) -> Observable a -> Observable b -> Observable r
+combineLatest combiner oa ob = Observable $ \downstream -> 
+    let
+        onNext_ :: TMVar t -> TMVar s -> (t -> s -> IO ()) -> t -> IO ()
+        onNext_ refT refS onNextFunc valT = join . atomically $ do
+            _ <- tryTakeTMVar refT
+            putTMVar refT valT 
+            maybeS <- tryReadTMVar refS
+            return . when (isJust maybeS) $ onNextFunc valT (fromJust maybeS)
+
+        onError_ :: TMVar Bool -> SomeException -> IO ()
+        onError_ hasError e = join . atomically $ do
+            hasE <- takeTMVar hasError
+            putTMVar hasError True
+            return . when (not hasE) $ onError downstream e
+
+        onCompleted_ :: TMVar t -> TMVar Bool -> TMVar Int-> IO ()
+        onCompleted_ refT hasCompleted hasActive = join . atomically $ do
+            emptyT <- isEmptyTMVar refT
+            hasC   <- takeTMVar hasCompleted
+            active <- takeTMVar hasActive
+            putTMVar hasCompleted True
+            putTMVar hasActive (active - 1)
+            return . when (emptyT && not hasC || active - 1 == 0) $ 
+                onCompleted downstream
+    in do
+        active       <- newTMVarIO 2
+        refA         <- newEmptyTMVarIO
+        refB         <- newEmptyTMVarIO
+        hasError     <- newTMVarIO False
+        hasCompleted <- newTMVarIO False
+        let obrA = Observer (onNext_ refA refB (fa downstream)) 
+                            (onError_ hasError) 
+                            (onCompleted_ refA hasCompleted active) 
+                            (subscription downstream)
+        let obrB = Observer (onNext_ refB refA (fb downstream)) 
+                            (onError_ hasError) 
+                            (onCompleted_ refB hasCompleted active) 
+                            (subscription downstream)
+        _subscribe ob obrB
+        _subscribe oa obrA
+        where
+            fa downstream = (\a b -> onNext downstream (combiner a b))
+            fb downstream = (\b a -> onNext downstream (combiner a b))
+
+instance Monad Observable where
+    return = pure
+    (>>=)  = flatMap
+
+flatMap :: Observable a -> (a -> Observable b) -> Observable b
+flatMap obs f = Observable $ \downstream ->
+    let
+        onNext_ gate activeRef hasError hasCompleted val = do
+            atomically $ modifyTVar activeRef (+1)
+            s <- emptySubscription
+            let inner = Observer (innerOnNext_)
+                                 (onError_ hasError)
+                                 (innerOnCompleted_ s)                    
+                                 (s)
+            addSubscription (subscription downstream) (subscription inner)
+            handle (onError_ hasError) . void $ _subscribe (f val) inner
+                where
+                    innerOnNext_ v = do
+                        withMVar gate $ \_ -> onNext downstream v    
+
+                    innerOnCompleted_ s = do
+                        cond <- atomically $ do 
+                            c <- readTVar hasCompleted
+                            modifyTVar activeRef (subtract 1)
+                            a <- readTVar activeRef
+                            return (c && a == 0)
+                        if cond 
+                            then onCompleted downstream
+                            else removeSubscription (subscription downstream) s
+            
+        onError_ hasError e = do
+            cond <- atomically $ do 
+                e <- swapTVar hasError True
+                return (not e)
+            when cond $ onError downstream e
+        
+        onCompleted_ activeRef hasCompleted = do
+            cond <- atomically $ do
+                c <- swapTVar hasCompleted True
+                a <- readTVar activeRef
+                return (not c && a == 0)
+            when cond $ onCompleted downstream
+
+    in do 
+        gate         <- newMVar ()
+        activeRef    <- newTVarIO (0 :: Int) 
+        hasError     <- newTVarIO False
+        hasCompleted <- newTVarIO False
+
+        _subscribe obs $ Observer (onNext_ gate activeRef hasError hasCompleted)
+                                  (onError_ hasError)
+                                  (onCompleted_ activeRef hasCompleted)
+                                  (subscription downstream)
+
+-------------------------------------------------------------------------------
 obs = observable $ \obr -> 
     do onNext obr 1
        onNext obr 2
@@ -154,8 +262,8 @@ infinite = observable $ \obr -> do
             a 
             repeatN (n-1) a
 
-main :: IO ()
-main = do
+main2 :: IO ()
+main2 = do
     hSetBuffering stdout LineBuffering
     obr <- observer on oe oc (print "unsubscribed")
     sub <- subscribe obs' obr
@@ -173,3 +281,16 @@ main = do
         oe = print . show
         oc = print "Completed"
 
+main :: IO ()
+main = do
+    hSetBuffering stdout LineBuffering
+    obr <- observer on oe oc (print "unsubscribed")
+    sub <- subscribe obs' obr
+    return ()
+    where 
+        obs'  = combineLatest (,) (infinite `observeOn` newThread) (infinite `observeOn` newThread)
+        on v = do
+            tid <- myThreadId 
+            print (show tid ++ ": " ++ show v)
+        oe = print . show
+        oc = print "Completed"

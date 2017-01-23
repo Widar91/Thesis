@@ -2,13 +2,16 @@
 \Chapter{Out of the rabbit hole}{Towards a usable API}
 \label{chap:outoftherabbithole}
 
-\epigraph{\hspace{4ex}\textit{TBD}}{--- Lewis Carol,\\ \textit{Alice in Wonderland}}
+\epigraph{\hspace{4ex}\textit{
+''In theory there is no difference between theory and practice; in practice there is.''}}{--- Nassim Nicholas Taleb,\\\textit{Antifragile - Things that Gain From Disorder}}
 
 So far we focused our analysis on the essence of the \code{Observable} interface, setting aside the many operational concerns that would come up when trying to implement these concepts into a usable, commercial API. In this chapter we are going to build the bridge between our theoretical definition of \code{Observable} and a concrete and usable implementation of a reactive library, to which we will refer to as Rx.
 
-In the remained of the discussion, we are going to introduce the \textit{Reactive Contract}, a set of assumptions on the reactive types our library is going to build upon, \textit{Schedulers}, which will allow us to bring concurrency into our reactive equation, \textit{Subscriptions}, used to implement a mechanism for premature stream cancellation and, finally, \textit{Operators}, the means with which we will make our reactive streams composable.
+The goal of this chapter is to provide the reader with a reference implementation of a reactive library as well as to highlight the challenges and issues that emerge when trying to build the bridge between theory and practice. The implementation choices presented below are in no way prescriptive, instead, they aim to describe the problem in the most clear way, in order to stimulate awareness rather than blindly guide the reader to a solution. \todo{Say something about why I chose to go with the RxJava style of implementation?}
 
-For the sake of clarity and completeness, the following set of interfaces represents the starting point for our discussion:\footnote{\code{subscribe} has been renamed to \code{\_subscribe} in order to both avoid naming conflicts later on in the discussion and reflect the fact that it should not be used directly by the user.}\\
+In the remainder of the discussion, we are going to introduce the \textit{Reactive Contract}, a set of assumptions on the reactive types our library is going to build upon, \textit{Schedulers}, which will allow us to bring concurrency into our reactive equation, \textit{Subscriptions}, used to implement a mechanism for premature stream cancellation and finally, \textit{Operators}, the means with which we will make our reactive streams composable.
+
+For the sake of clarity and completeness, the following set of interfaces represents the starting point for our discussion:\footnote{\code{subscribe} has been renamed to \code{\_subscribe} in order to avoid naming conflicts later on in the discussion and reflect the fact that it should not be used directly by the user.}
 
 \hminted 
 newtype Observable a = Observable 
@@ -20,9 +23,9 @@ data Observer a = Observer
 	, onCompleted :: IO ()
 	}
 \end{minted}
-\\
 
-It is worth noting that even though the Observable's theoretical foundations lie in the realm of functional programming, the road to make it usable is full of obstacles that are often better tackled using imperative programming features, such as state. As much as I personally prefer a functional and pure approach to programming, I will favor, in the rest of the discussion, the solution that most clearly and easily solves the problem, be that functional or imperative.
+
+It is worth noting that even though the \code{Observable}'s theoretical foundations lie in the realm of functional programming, the road to making it usable is full of obstacles that are often better tackled using imperative programming features, such as state. As much as I personally prefer a functional and pure approach to programming, I will favor, in the rest of the discussion, the solution that most clearly and easily solves the problem, be that functional or imperative.
 
 \section{The Reactive Contract}
 \label{sec:contract}
@@ -49,11 +52,13 @@ For this reason, we assume that messages will always arrive in a serialized fash
 
 \subsection{Best Effort Cancellation}
 \label{ass-besteffort}
-The next assumption involves premature stream cancellation. We will later introduce the \code{unsubscribe} function, used to activate this mechanism and stop observing an \code{Observable}; the assumption here is that whenever \code{unsubscribe} is invoked, the library will make a best effort attempt to stop all the ongoing work happening in the background. The reason is simple: it is not always safe to abort work that is being processed - e.g. database writes. Although the library might still complete the execution of pending work, its results are guaranteed not to be propagated to any \code{Observer} that was previously unsubscribed.\todo{This may leak, if not properly used, e.g. db writes on different schedulers. Do we care?}
+The next assumption involves premature stream cancellation via \code{Subscription}s and the function \code{unsubscribe}, used in order to stop the observation of events from an \code{Observable}; we are going to assume that whenever \code{unsubscribe} is invoked, the library will make a best effort attempt to stop all the ongoing work happening in the background. The reason is simple: it is not always safe to abort work that is being processed - e.g. database writes. Although the library might still complete the execution of pending work, its results are guaranteed not to be propagated to any \code{Observer} that was previously unsubscribed.
 
-\subsection{Resource Cleanup after termination}
-\subsection{Observers are use and throw}
-\label{ass-usethrow}
+\subsection{Resource Cleanup After Termination}
+As we mentioned in assumption \ref{ass-grammar}, the guarantee that no events will occur after the first termination message makes it possible to determine when resource cleanup operations are safe to perform. We will now make one step further and assume that resources \textit{will} be cleaned up immediately after termination. This will make sure that any related side-effect will occur in a predictable manner.
+
+\subsection{A note on the Reactive Contract}
+\todo[inline]{does the reactive contract even make sense? for example, why do we stop on onError? there could be a version of RX which doesn't. Would that make sense? Not sure whether to include this section or not yet.}
 
 \section{Concurrency with Schedulers}
 \label{schedulers}
@@ -64,15 +69,15 @@ However, this synchronous behavior might not always be the best solution, especi
 
 \code{Scheduler}s allow us to to alter the control flow of the data processing within an observable expression, introducing a way to dispatch the work of any number of operators to be executed within the specified context, e.g. a new thread.
 
-The \code{Scheduler} interface looks like the following \footnote{The interface presented in this section is the result of a simplification of the actual one, which involves \code{Subscription}s. We will discuss the impact of \code{Subscription}s on \code{Schedulers} in the next section; suffices to know that the version presented here has no negative effects w.r.t the generality of our discussion.}.\\
+The \code{Scheduler} interface looks like the following \footnote{The interface presented in this section is the result of a simplification of the actual one, which involves \code{Subscription}s. We will discuss the impact of \code{Subscription}s on \code{Schedulers} in the next section; suffices to know that the version presented here has no negative effects w.r.t the generality of our discussion.}.
 
-\haskellcode[firstline=31,lastline=34]{src/scheduler.hs}\\
+\haskellcode[firstline=31,lastline=34]{src/scheduler.hs}
 
 \code{Scheduler}s expose two functions which are essentially equal, modulo arbitrary delays in time. Both of these functions take an \code{IO} action as input and dispatch it to the appropriate execution context, producing a side effect. 
 
-To better understand \code{Scheduler}s, let us present the implementation of one of them, the newThread scheduler, which allows us to dispatch actions to a new, dedicated thread.\\
+To better understand \code{Scheduler}s, let us present the implementation of one of them, the newThread scheduler, which allows us to dispatch actions to a new, dedicated thread.
 
-\haskellcode[firstline=36,lastline=48]{src/scheduler.hs}\\
+\haskellcode[firstline=36,lastline=48]{src/scheduler.hs}
 
 The \code{newThread} function gives us a side effectful way of creating a \code{Scheduler} by generating a new execution context - i.e. a new thread - and setting up the necessary tools for safe communication with it. The \code{Scheduler} functions we are provided, on the other hand, simply write the input \code{IO} action to the channel and return, effectively dispatching the execution of those actions to the new thread. 
 
@@ -80,11 +85,9 @@ Up to this point we haven't mentioned \code{Observable}s at all. This is the rea
 
 The only thing missing now is a way for us to combine the functionality of these two interfaces: \code{observeOn} and \code{subscribeOn} are the operators that will aid us on this task. The former will allow us to dispatch any call to an observer continuation on to the specified execution context, whereas the latter will allow us to control the concurrency of the \code{Observable} subscribe function.
 
-For the sake of completeness and understandability, the following snippet contains a simple implementation of the \code{observeOn} operator together with a sample usage.\\
+For the sake of completeness and understandability, the following snippet contains a simple implementation of the \code{observeOn} operator together with a sample usage.
 
-\haskellcode[firstline=50,lastline=59]{src/scheduler.hs}\\
-
-\haskellcode[firstline=61]{src/scheduler.hs}\\
+\haskellcode[firstline=50]{src/scheduler.hs}
 
 
 \subsection{A Note on the Concept of Time}
@@ -107,35 +110,34 @@ With schedulers, we are now able to handle observable streams from different exe
 \todo[inline]{Is the following clear?}
 We discussed in the previous section how schedulers effectively boost the expressive power of our reactive expressions by introducing concurrency and interleaving among events originating from different streams. Introducing a cancellation mechanism, on the other hand, is a purely practical concern: although very useful from a practical perspective, especially in the context of resource management, it doesn't impact expressive power from a \textit{reactive} point of view.
 
-The means by which we are going to introduce a cancellation mechanism inside our reactive equation is though the \code{Subscription} datatype. From a functionality point of view, what we are aiming for is for the \code{\_subscribe} function to hand back a \code{Subscription} whenever invoked; users will later be able to use this \code{Subscription} in order to prematurely cease the observation of a stream.
+The means by which we are going to introduce a cancellation mechanism inside our reactive equation is though the \code{Subscription} datatype. From a functionality point of view, what we are aiming for is for the \code{\_subscribe} function to hand back a \code{Subscription} whenever invoked; users will later be able to use this \code{Subscription} in order to prematurely cease the observation of a stream. This design is closely related to Dispose pattern utilized in the .NET framework\cite{cwalina2008framework}.
 
-The first step in designing a new feature is to understand how the already existing interfaces will be affected by the newly introduced one; starting from our informal definition of \code{Observable} from section \ref{obscont}, let's now define a new function \code{(\%)}, which incorporates the notion of returning a \code{Subscription} and see how this is going to affect our types:\\
+The first step in designing a new feature is to understand how the already existing interfaces will be affected by the newly introduced one; starting from our informal definition of \code{Observable} from section \ref{obscont}, let's now define a new function \code{(\%)}, which incorporates the notion of returning a \code{Subscription} and see how this is going to affect our types:
 
 \hminted
 %a  :: a -> IO Subscription
 %?a :: (Either SomeException (Maybe a) -> IO ()) -> IO Subscription
 \end{minted}
-\\
+
 
 With this change, each execution of the \code{Observable} function now returns a \code{Subscription}, a means for the user to prematurely terminate the processing of the stream. 
 
-The next question is the following: to whom does a \code{Subscription} belongs to? The key observation in addressing this question is that an \code{Observable} can be subscribed to by multiple \code{Observer}s; our goal is to provide a mechanism that will allow for a fine-grained control over which \code{Observer} is supposed to stop receiving events. The answer is then straightforward: the notion of subscription is tight to that of observer. The following snippet reflects this observation:\\
+The next question is the following: to whom does a \code{Subscription} belong to? The key observation in addressing this question is that an \code{Observable} can be subscribed to by multiple \code{Observer}s; our goal is to provide a mechanism that will allow for a fine-grained control over which \code{Observer} is supposed to stop receiving events. The answer is then straightforward: the notion of subscription is tight to that of observer. The following snippet reflects this observation:
 
 \hminted
 $a  :: (Subscription, Either SomeException (Maybe a) -> IO ())
 %$a :: (Subscription, Either SomeException (Maybe a) -> IO ()) 
 	-> IO Subscription
 \end{minted}
-\\
 
-Let's quickly summarize what we have discussed so far: a subscription is some object which will allow us to prematurely stop observing a specific stream; since any stream can be subscribed to by multiple observers, we need to associate subscriptions to observers as opposed to observables. Lastly, a subscription is returned every time an observer is subscribed to a stream through the \code{\_subscribe} function. The following modifications to our reactive interfaces reflect these ideas:\todo{\_subscribe should return IO () no IO Subscription}\\
 
-\haskellcode[firstline=12,lastline=21]{src/subsciption.hs}\\
+Let's quickly summarize what we have discussed so far: a subscription is some object which will allow us to prematurely stop observing a specific stream; since any stream can be subscribed to by multiple observers, we need to associate subscriptions to observers as opposed to observables. Lastly, a subscription is returned every time an observer is subscribed to a stream through the \code{\_subscribe} function. The following modifications to our reactive interfaces reflect these ideas:
 
-\todo[inline]{do not subscribe an observer to 2 different streams}
+\haskellcode[firstline=13,lastline=21]{src/subsciption.hs}
+
 So far we have talked a lot about \code{Subscription}s, yet we haven't clarified what the type really looks like. The general idea is to have \code{Subscription} record the state of the \code{Observer} w.r.t. the \code{Observable} it is subscribed to - be that subscribed or unsubscribed. This can be easily achieved with a variable \code{\_isUnsubscribed :: IORef Bool} initialized to \code{False}, indicating that the associated \code{Observer} is initially not unsubscribed.
 
-From a practical point of view, it is useful to augment \code{Subscription} with some additional functionality. The following code shows a definition of \code{Subscription} which incorporates an \code{IO ()} action to be executed at unsubscription time. This is particularly useful when we want to associate resource cleanup actions to the termination - be that forced or natural - of a stream observation. Additionally, it is useful to make the type recursive, allowing \code{Subscription}s to contain other values of the same type. This will be extremely useful for internal coordination of operators such as \code{(>>=) :: Monad m => m a -> (a -> m b) -> m b}, where each value will spawn and subscribe a new \code{Observable}, whose subscription should be linked to the original one. Section \ref{operators} will extensively discuss this matter.\\
+From a practical point of view, it is useful to augment \code{Subscription} with some additional functionality. The following code shows a definition of \code{Subscription} which incorporates an \code{IO ()} action to be executed at unsubscription time. This is particularly useful when we want to associate resource cleanup actions to the termination - be that forced or natural - of a stream observation. Additionally, it is useful to make the type recursive, allowing \code{Subscription}s to contain other values of the same type. This will be extremely useful for internal coordination of operators such as \code{(>>=) :: Monad m => m a -> (a -> m b) -> m b}, where each input value will spawn and subscribe a new \code{Observable}, whose subscription should be linked to the original one. Section \ref{operators} will extensively discuss this matter.
 
 \hminted
 data Subscription = Subscription
@@ -144,43 +146,45 @@ data Subscription = Subscription
 	, subscriptions   :: IORef [Subscription]  
 	}
 \end{minted}
-\\
 
-We will see, later on, how we can further augment this interface in order to incorporate additional functionality useful for internal operator coordination as well as management of schedulers. 
+
+%We will see, later on, how we can further augment this interface in order to incorporate additional functionality useful for internal operator coordination as well as management of schedulers. 
 
 It's now time to introduce the two functions at the hearth of the whole cancellation mechanism: \code{unsubscribe} will take care of modifying the state carried by the \code{Subscription} - i.e. setting \code{\_isUnsubscribed} to \code{True} -  as well as execute the associated \code{IO ()} action, whereas \code{subscribe} will simply act as a proxy for the original \code{\_subscribe} function from the \code{Observable} interface.
 
 %It's now time to introduce the two functions at the hearth of the whole cancellation mechanism: \code{unsubscribe} will take care of modifying the state carried by the \code{Subscription} - i.e. setting \code{\_isUnsubscribed} to \code{True} - as well as execute the associated \code{IO ()} action, whereas \code{subscribe} will act as a proxy for the original \code{\_subscribe} function from \code{Observable}, calling it with a special \code{Observer} as an argument, which will prevent events from propagating to the downstream once the \code{Subscription} has been unsubscribed. Note how, for this mechanism to work, it is necessary for the two \code{Observer}s to share the same \code{Subscription}.
 
-\haskellcode[firstline=71,lastline=84]{src/subsciption.hs}\\
+\haskellcode[firstline=71,lastline=84]{src/subsciption.hs}
 
-The \code{safeObserver} utilized by the \code{subscribe} function is of crucial importance to the functionality of our library: its implementation, in fact, embeds two of the reactive contract assumptions introduced previously. The safe onNext/onError/onCompleted functions implement the subscription mechanism, preventing, through the \code{ifSubscribed} function, events from propagating to the underlying \code{Observer}, once the related \code{Subscription} has been unsubscribed. By doing so, it is easy to see how assumption \ref{ass-besteffort} is satisfied: unsubscribing from a stream does not force the stop of any outstanding work, yet it is made sure that any result produced after unsubscribing, if any, will not be delivered to the downstream \code{Observer} - i.e. the \code{Observer} supplied by the user. Additionally, \code{safeObserver} allows the enforcement of the reactive grammar seen in assumption \ref{ass-grammar}; this is done by calling \code{unsubscribe} as soon as the first termination message - be that \code{onError} or \code{onCompleted} - arrives, effectively preventing any additional event from being propagated.
+The \code{safeObserver} utilized by the \code{subscribe} function is of crucial importance to the functionality of our library and its the reason why we need to proxy the original \code{\_subscribe} function: its implementation, in fact, embeds two of the reactive contract assumptions introduced previously. The safe onNext/onError/onCompleted functions implement the subscription mechanism, preventing, through the \code{ifSubscribed} function, events from propagating to the underlying \code{Observer}, once the related \code{Subscription} has been unsubscribed. By doing so, it is easy to see how assumption \ref{ass-besteffort} is satisfied: unsubscribing from a stream does not force the stop of any outstanding work, yet it is made sure that any result produced after unsubscribing, if any, will not be delivered to the downstream \code{Observer} - i.e. the \code{Observer} supplied by the user. Additionally, \code{safeObserver} allows the enforcement of the reactive grammar seen in assumption \ref{ass-grammar}; this is done by calling \code{unsubscribe} as soon as the first termination message - be that \code{onError} or \code{onCompleted} - arrives, effectively preventing any additional event from being propagated.
+
+Note that, with the current implementation of the subscription mechanism, an \code{Observer} can only be subscribed once and only to a single \code{Observable}, as, once its \code{Subscription} is unsubscribed, the \code{\_isUnsubscribed} field is never reset to \code{False}. This convention is shared by many already existing implementations of reactive libraries such as the onces under the ReactiveX umbrella\cite{rxjava-wiki}.
 
 Now that we have a clear idea of how the subscription mechanism is supposed to work and how it is integrated into our library, let's take a look at a few observations and concerns that involve it. 
 
 \subsection{Impact on Schedulers}
 
-In the previous sections we discussed a simplified version of the \code{Scheduler} interface that was glossing, without loss of generality, over details regarding \code{Subscription}s. In practice, it is useful to associate \code{Subscription}s not only to \code{Observer}s but to \code{Scheduler}s as well. \\
+In the previous sections we discussed a simplified version of the \code{Scheduler} interface that was glossing, without loss of generality, over details regarding \code{Subscription}s. In practice, it is useful to associate \code{Subscription}s not only to \code{Observer}s but to \code{Scheduler}s as well. 
 
-\haskellcode[firstline=95,lastline=99]{src/scheduler_subscription.hs}\\
+\haskellcode[firstline=95,lastline=99]{src/scheduler_subscription.hs}
 
-With this version of the interface, each scheduled action returns a \code{Subscription}, offering fine grained control over the actions to be executed; at the same time, a \code{Subscription} is also associated to the \code{Scheduler} as a whole, allowing the user to perform cleanup actions on the \code{Scheduler} itself once \code{unsubscribe} is called. This is best shown with a new example implementation of the newThread scheduler and observeOn operator:\\
+With this version of the interface, each scheduled action returns a \code{Subscription}, offering fine grained control over the actions to be executed; at the same time, a \code{Subscription} is also associated to the \code{Scheduler} as a whole, allowing the user to perform cleanup actions on the \code{Scheduler} itself once \code{unsubscribe} is called. This is best shown with a new example implementation of the newThread scheduler and observeOn operator:
 
-\haskellcode[firstline=101,lastline=130]{src/scheduler_subscription.hs}\\
+\haskellcode[firstline=101,lastline=130]{src/scheduler_subscription.hs}
 
 The code is mostly equal to the one presented in section \ref{schedulers}. The most relevant change can be found at line 107, where we create a subscription for the newThread scheduler with an action that simply kills the thread\footnote{Absolutely not safe, but it's good enough for the sake of our example.}. On line 122 we then add this subscription to the one carried by the downstream observer. In this way, unsubscribing from the downstream subscription will trigger a waterfall effect that will eventually unsubscribing the scheduler's one as well, effectively killing the thread associated to it.
 
-On a last note regarding the relationship between schedulers and subscriptions, it is worth mentioning how the subscription mechanism only works in the presence of schedules. As we mentioned before, in fact, Rx is synchronous by default in the processing of its data. This means that the program would return from the invocation of the \code{subscribe} function only after it has fully processed the stream, effectively rendering the subscription mechanism ineffective, as it would not be possible to invoke \code{unsubscribe} whilst the \code{Observable} is active. With the introduction of schedules and different execution contexts, this problem disappears and the mechanism works as intended.
+On a last note regarding the relationship between schedulers and subscriptions, it is worth mentioning how the subscription mechanism only works in the presence of schedulers. As we mentioned before, in fact, Rx is synchronous by default in the processing of its data. This means that the program would return from the invocation of the \code{subscribe} function only after it has fully processed the stream, effectively rendering the subscription mechanism ineffective, as it would not be possible to invoke \code{unsubscribe} whilst the \code{Observable} is active. With the introduction of schedules and different execution contexts, this problem disappears and the mechanism works as intended.
 
 \subsection{Formalizing Subscriptions}
 
 In Section \ref{obscont} we saw how an \code{Observable}, at its essence, is nothing more than an instance of the Continuation Monad, where the three types of events that can occur are materialized into a single datatype, \code{Event a}, as opposed to being handled by three different continuations.
 
-In the discussion that follows we are going to try and understand what the essence of a subscription is and how it relates to our formal definition of observable as a continuation. 
+In the discussion that follows we are going to try and understand what the essence of the subscription mechanism is and how it relates to our formal definition of observable as a continuation. 
 
-As we mentioned before, a subscription is strongly tight to the notion of observer, as an observable can be subscribed-to multiple times. Although, we can be more specific than this and notice that a subscription is actually tight to the execution of an observable. These two takes on subscriptions are effectively the same thing: an observer can only be subscribed a single time to a single observable (see assumption \ref{ass-usethrow}), creating the unique link between the subscription and a single execution of the observable function. This perspective is very insightful, as it hints to the fact that a subscription should be immutable within the context of an observable execution. Another observation is that the subscription needs to be retrievable from an observable for a number of reasons, the most important of which being to check whether the subscriber is unsubscribed before pushing any additional events.
+As we mentioned before, a subscription is strongly tight to the notion of observer, as an observable can be subscribed-to multiple times. Although, we can be more specific than this and notice that a subscription is actually tight to the execution of an observable. These two takes on subscriptions are effectively the same thing: an observer can only be subscribed a single time to a single observable, creating the unique link between the subscription and a single execution of the observable function. This perspective is very insightful, as it hints to the fact that a subscription should be immutable within the context of an observable execution. Another observation is that the subscription needs to be retrievable from an observable for a number of reasons, the most important of which being to check whether the subscriber is unsubscribed before pushing any additional events.
 
-The properties of subscription that we just discussed are very similar to the idea of environment variables, shared by computations yet immutable in their nature. The Haskell programming language exposes a monad construct for such computations, the Reader - Environment - Monad: in the remained of this section, we are going to formalize the essence of subscriptions as a Reader monad transformer on top of our previous definition of observable as a continuation.\\
+The properties of subscription that we just discussed are very similar to the idea of environment variables, shared by computations yet immutable in their nature. The Haskell programming language exposes a monad construct for such computations, the Reader - Environment - Monad: in the remained of this section, we are going to model the subscription mechanism as a Reader monad transformer on top of our previous definition of observable as a continuation.
 
 \hminted
 type Observer   a = Event a -> IO ()
@@ -196,105 +200,101 @@ subscribe obs obr = do
 enforceContract :: Observer a -> Observer a
 enforceContract obr = ...
 \end{minted}
-\\
-
-This formalization is very insightful under many points of view: first of all, in the same way as schedulers, it is completely orthogonal to the definition of observable we previously had, the definition did not change, but the mechianism was, in a way stuck on top of it. THis is very clear when looking at line 8 in the subscribe function: we first run the reader transformer, getting a continuation monad out of it, which will have the environment variable available to use. Notice how each call to subscribe will effectively create a new subscription and pair it to the execution of the observable. 
-
-Notice how, even if the subscription is immutable by itself. the defintiion of the datatype still allows us to 
-
-A natural question now is: why didn't we implement subscriptions in this way also before, in the "real world" implementation? there we had to change the interfaces, making it not orthogonal. We did this only for clarity, the interfaces look more clear than reading readerT, especially if we want to use that implementation as a reference for other languages. On the other hand, here we want to focus on the essence of the subscription mechanism, therefore all the fancy FP stuff.
-
-Notice how this formalization only takes care of the aspect of stitching subscriptions to observables, the business logic of the mechanism is still the same as before, embedded in the \code{enforceContract} function.
-
-As a final point, this is obviously not the only way we can formalize this mechanism, many other definitons have been tried out, yet this one has turned out to be the best one. We could have used stateT:\\
-
-\hmint |type Observable a = StateT Subscription (ContT () IO) (Event a)|
-
-but this would have given too much power, and the possibility to mutate the subscription. Another version was:\\
-
-\hmint |Cont () (StateT Subscription IO) (Event a)|
-
-it would be perfect in order to thread Subscriptions throughout execution making it usable inside operators, since the call to the continuation would return a state which would then be sequenced by >>=. This method fails with schedulers, in particular newThread since the state of the action executed on the new thread would be disconnected from the threading mentioned above. The other thread would get a state but it would not know what to do with it and would not have any ways to connect it to the original one passed by the subscribe. Another way is to use mapStateT to map the IO action that will result from the state to an action on the other thread. Again, this method won't work, 
 
 
+This formalization is very insightful under many points of view: first of all, in the same way as schedulers, it is completely orthogonal to the definition of observable we previously had: the original definition did not change, yet the mechanism was, in a way, glued on top of it. This observation becomes very clear when looking at line 8 in the above snippet: the \code{subscribe} function first runs the reader transformer, resulting in continuation monad that will have the environment variable available within its context. Notice how each call to subscribe will effectively create a new subscription and pair it to the execution of the observable. 
+
+A natural question now is: why didn't we use this technique for implementing subscriptions in the "real world" implementation from the previous paragraph? There, we had to change the definitions of our interfaces, losing orthogonality as a consequence. The reason is simply clarity, the interfaces look more clear than reading readerT, especially if we want to use that implementation as a reference for other languages. On the other hand, the goal of this paragraph is focusing on the essence of the subscription mechanism, hence the use of theory-related constructs such as monads.
+
+Notice how this formalization only focuses on augmenting the definition of observables with subscriptions. The actual logic of the mechanism remains unchanged and is abstracted away through the \code{enforceContract} function.
+
+As a final point, it is worth noting that what we presented so far is obviously not the only way we can formalize the subscription mechanism. Many other definitions have been tried out during the course of this work, yet all of the others ended up granting too much or too less power to the resulting mechanism and were therefore discarded. Examples include:
+
+\hminted
+type Observable a = StateT Subscription (ContT () IO) (Event a)
+type Observable a = Cont () (StateT Subscription IO) (Event a)
+\end{minted}
 
 
+%it would be perfect in order to thread Subscriptions throughout execution making it usable inside operators, since the call to the continuation would return a state which would then be sequenced by >>=. This method fails with schedulers, in particular newThread since the state of the action executed on the new thread would be disconnected from the threading mentioned above. The other thread would get a state but it would not know what to do with it and would not have any ways to connect it to the original one passed by the subscribe. Another way is to use mapStateT to map the IO action that will result from the state to an action on the other thread. Again, this method won't work, 
 
------------------------------------------------------------------------
+%On the motivation for a Subscription: it is needed so the user can cancel work at any time. This implies that a scheduler is used. If this is not the case the subscription will be returned synchronously after the execution of the whole stream. It will therefore be already unsubscribed and calling unsubscribe will be a NoOp. In the case that we actually use schedulers then we can unsubscribe from anywhere in our program. 
 
-- edge enforcement
+%Now the question is the following: can we reproduce the behaviour of unsubscribe with operators so that we can eliminate subscriptions altogether? That is, we can hide them to the outside and use them only inside the stream, we still need them but we don't necessarily need to return them when we subscribe. The behavious can be easily replaced by the use of takeUntil(Observable a) where we pass in a subject that will be signaled when we want to stop the stream. The takeUntil operator fires events from the upstream up until the point in which we signal the subject, then stops the stream and unsubscribes. 
 
-- subject + takeuntil: do we really need subscriptions?
-
-- why cannot be monoid, we need remove
-
------------------------------------------------------------------------
-
-On the motivation for a Subscription: it is needed so the user can cancel work at any time. This implies that a scheduler is used. If this is not the case the subscription will be returned synchronously after the execution of the whole stream. It will therefore be already unsubscribed and calling unsubscribe will be a NoOp. In the case that we actually use schedulers then we can unsubscribe from anywhere in our program. 
-
-Now the question is the following: can we reproduce the behaviour of unsubscribe with operators so that we can eliminate subscriptions altogether? That is, we can hide them to the outside and use them only inside the stream, we still need them but we don't necessarily need to return them when we subscribe. The behavious can be easily replaced by the use of takeUntil(Observable a) where we pass in a subject that will be signaled when we want to stop the stream. The takeUntil operator fires events from the upstream up until the point in which we signal the subject, then stops the stream and unsubscribes. 
-
-With this approach we seemingly lose one thing, i.e. the ability to specify what happens at unsubscription time; this functionality can simply be regained by a subscribe function that takes the unsubscribe action as a parameter and runs it when the stream is unsubscribed.
+%With this approach we seemingly lose one thing, i.e. the ability to specify what happens at unsubscription time; this functionality can simply be regained by a subscribe function that takes the unsubscribe action as a parameter and runs it when the stream is unsubscribed.
 
 \section{Operators}
 \label{operators}
 
-- what are operators? ways to transform a stream
 
-- introduce lift, we can define operators on underlying type (make connection with continuation bind? formalObserver val = matchF val observer )
+%- how does it work with subscriptions?
 
-- functor, applicative, monad
+%- formalizing operators: stateful objects, nothing to do about that. Drawing of continuations called
 
-- overview of other operators
+With schedulers and subscriptions we can handle asynchronous streams of data from different execution context and cease our observation at any point in time. The last feature before we can consider our reactive library ready for use by developers is the introduction of a set of higher order functions that, given one or more \code{Observable}s, will allow access to its underlying elements - providing ways to transform, compose and filter them - while abstracting over the enclosing data structure. These higher order functions, also referred to as operators, are a common technique when it comes to abstractions over data structures; examples can be found in many commonly known programming languages, where data structures such as iterables, lists, trees, sets, ..., offer a wide range of functions - map, filter, flatmap, concat, etc - that allow the user to operate on its internal elements without requiring any knowledge of the structure that contains them.
 
-- how does it work with subscriptions?
-
-- formalizing operators: stateful objects, nothing to do about that. Drawing of continuations called
-
-
---------------------------------------------------
-
-With schedulers and subscriptions we can handle asynchronous streams of data from different execution context and cease our observation whenever at any point in time. The last feature before we can consider our reactive library ready for use by developers is the introduction of a set of higher order functions that, given one or more \code{Observable}s, will allow access to its underlying elements - providing ways to transform, compose and filter them - while abstracting over the enclosing data structure. These higher order functions, also referred to as operators, are a common technique when it comes to abstractions over data structures; examples can be found in many commonly known programming languages, where data structures such as iterables, lists, trees, sets, ..., offer a wide range of functions - map, filter, flatmap, concat, ... - that allow the user to operate on its internal elements without any knowledge of the structure that contains them.
+\subsection{Functor, Applicative, Monad}
 
 Back in section \ref{sec:applyingduality}, we defined the Functor instance for the Observable type, effectively augmenting our reactive type with our first operator, \code{map :: (a -> b) -> Observable a -> Observable b}, allowing the user to transform streams of elements of type \code{a} into streams of elements of type \code{b} by applying the input function of type \code{a -> b} to each incoming element in the input stream.
 
-The next operator we are going to introduce is \code{lift :: (Observer b -> Observer a) -> Observable a -> Observable b}. This operator takes a function defined on the Observer level and lifts it to a more general context, that of Observable. This pattern is very common in the field of Functional Programming, and it is often used in order to provide an abstraction that facilitates accessing values nested inside container structures such as Functors, Applicatives or Monads. In the context of Observables, this function will result very useful as we will be able to define operators on the Observer level and later make them accessible in the context of Observables simply by lifting the operation.\todo{revise}\\
+The next operator we are going to introduce is \code{lift}. This operator takes a function defined on the Observer level and lifts it to a more general context, that of Observable\cite{lift}. This pattern is very common in the field of Functional Programming, and it is often used in order to provide an abstraction that facilitates accessing values nested inside container structures such as Functors, Applicatives or Monads. In the context of Observables, this function will result very useful as we will be able to define operators on the Observer level and later make them accessible in the context of Observables simply by lifting the operation.
 
-\haskellcode[firstline=6,lastline=7]{src/observable_functor_lift.hs}\\
+\haskellcode[firstline=23,lastline=24]{src/subsciption.hs}
 
-As an example, we repropose here the implementation if the Functor instance for Observable, this time using the \code{lift} function:\\
+As an example, we re-propose here the implementation of the Functor instance for Observable, this time using the \code{lift} function:
 
-\haskellcode[firstline=9]{src/observable_functor_lift.hs}\\
+\haskellcode[firstline=26,lastline=31]{src/subsciption.hs}
+
+As we discussed in section \ref{sec:applyingduality}, the \code{Observable} type, at its essence, is an instance of Applicative Functor and Monad from a cathegory theory perspective. This observation motivates our next effort of trying and defining such instances on the latest version of our interface. We will not bother anymore with proving the associated laws, as it would be a very difficult task, given the complicated nature of the implementation of such functions which now needs to handle subscriptions as well as synchronized state due to schedulers.\todo{Say more about the fact that they dont respect the laws, but just like the try, that is not a monad, they are ok? Meaning try doesnt respect the laws but nobody really cares, it does what it has to do and from an interface perspective it acts as if it was a monad.}
+
+\haskellcode[firstline=139,lastline=189]{src/subsciption.hs}
+
+The function \code{pure} does nothing more than wrapping a value into an \code{Observable} whereas \code{(<*>)} applies the most recent function emitted by the first \code{Observable} to the most recent element emitted by the second one. The implementation utilizes the more general \code{combineLatest} operator, which allows to combine two streams into one by emitting an item whenever either of the two emits one - provided that each of them has emitted at least one. 
+
+Last but not least comes the Monad instance for our Observable type:
+
+\haskellcode[firstline=191,lastline=243]{src/subsciption.hs}
+
+Note how this implementation if \code{(>>=)} shows the need for the introduction of children subscriptions that we discussed in section \ref{sec:subscriptions}: whenever the outer observable is unsubscribed, we want to automatically unsubscribe any observable that has previously been created by the function passed to \code{(>>=)}.
+
+\subsection{The Essential Operators}
+Operators can theoretically be infinite in number, as infinite are the transformations that can be done to elements of an observable stream. Practice shows, though, that a relatively small subset of operators and the composition of these, suffices to express the majority of the use cases encountered by users. Leveraging the power of composability of operators is advantageous towards the design of a simple yet powerful API.
+
+Operators can be grouped into categories by looking at their characteristics; it is not the purpose of this work to list every possible operator and its semantics, yet, for the sake of completeness, table \ref{ess-oper} presents the most important categories\footnote{An implementation of these operators can be found at the repository associated with this work.} and the associated operators:\todo{Put operator description in the table?}
+
+\begin{table}[]
+\thisfloatpagestyle{empty}
+\centering
+\caption{The essential operators}
+\label{ess-oper}
+\begin{tabular}{ll}
+                                                        &                                                                                                                                                                                  \\ \hline
+%\multicolumn{1}{|l|}{\textbf{Creation}}                 & \multicolumn{1}{l|}{}                                                                                                                                                            \\ \hline
+\multicolumn{1}{|l|}{\textbf{Transformation}}           & \multicolumn{1}{l|}{\begin{tabular}[c] {l}\\ buffer\\ bufferWithSkip\\ groupBy\\ fmap  \\ scan \\ scanLeft\\ sample\\ throttle\\ window\\{\color{white} a}\end{tabular}}                          \\ \hline
+\multicolumn{1}{|l|}{\textbf{Filtering \& Conditional}} & \multicolumn{1}{l|}{\begin{tabular}[c]{l} \\ filter\\ distinctUntilChanged\\ skip\\ skipUntil\\ skipWhile\\ take\\ takeUntil\\ untilTake \\{\color{white} a} \end{tabular}}                         \\ \hline
+\multicolumn{1}{|l|}{\textbf{Combining}}                & \multicolumn{1}{l|}{\begin{tabular}[c]{l} \\ (\textgreater\textgreater=)\\ (\textless*\textgreater)\\ concat\\ startsWith\\ withLatestFrom\\ zip\\ zipWithBuffer \\{\color{white} a} \end{tabular}} \\ \hline
+\multicolumn{1}{|l|}{\textbf{Error Handling}}           & \multicolumn{1}{l|}{\begin{tabular}[c]{l} \\catchOnError\\ onErrorResumeNext\\ retry\\{\color{white} a}\end{tabular}}                                                                            \\ \hline
+\multicolumn{1}{|l|}{\textbf{Utility}}                  & \multicolumn{1}{l|}{\begin{tabular}[c]{l}\\ observeOn\\ subscribeOn\\ publish\\ share\\ ofType\\ doOnNext\\ doOnError\\ doOnCompleted\\  toIterable\\ toList\\{\color{white} a}\end{tabular}}     \\ \hline
+\end{tabular}
+\end{table}
 
 
-The first thing we want to do then is explore those operators that would derive from call instances in the Haskell language. For the sake of completeness, here we repropose the implementation of functor for observable, this time using lift.
-
-\hmint | functor code using lift |
-
-Next, we are going to implement an instance of the class Applicative. From a semantics point of view, this is nothing too hard, the first function, pure, needs to create and observ? out of ..., while (the other function) is a way to combine...
-
-\hmint | applicative code |
-
-Now let's go one step further and note that we can also flatmap. Show implementaiton and prove the laws, how do I prove the laws?
-
-\haskellcode[firstline=19,lastline=22]{src/obs_events.hs}\\
-
-Operators can theoretically be infinite, as infinite are the transformations that can be done to elements of an observable stream. Practice shows, though, that a relatively small subset of operators and the composition of those, suffices to express the majority of the use cases encountered by users. This leverages the power of composability of operators, coming straight from FP, and is advantageous from a API design, since the library won't have to explode with new operators for each use cases.
-
-Operators can be grouped into categories, by looking at their characteristics; it is not the purpose of this work to list every possible operator and its semantics, yet, for the sake of completeness, here are the most important categories\footnote{An implementation of these operators can be found at the repository associated with this work.}
-
-\todo[inline]{put a table or something}
-\begin{enumerate}
-\item{Creation}
-\item{Transformation}
-\item{Filtering}
-\item{Combining}
-\item{Error Handling}
-\item{Utility}
-\item{Combining}
-\end{enumerate}
-
-\subsection{About Lift}
 \subsection{Formalizing Operators}
 
-\section{Enforcing the Contract}
+So far we have seen which are the most useful operators and how they aid in making our reactive library more useful from a user perspective. Things get more complicated when we try to analyze them from a theoretical point of view: operators can be viewed as state machines, containing an internal state which is modified whenever an event occurs, following the semantics of the specific operator. 
+
+For this reason, trying to formalize them as a functional and pure structure becomes very difficult, resulting in more confusion than clarity. This outcome should not come as a surprise: operators defined on other more common data structures such as lists or trees are state machines as well, usually hiding their state using function parameters:
+
+\hminted
+take :: Int -> [a] -> [a]
+take _ []     = []
+take 0 _      = []
+take n (x:xs) = x : take (n-1) xs
+\end{minted}
+
+As we can see from this example implementation of take on lists, the internal state of the operator - i.e. the number of elements to be taken, \code{n} - is wired in the definition of the function, eliminating the need for an internal variable as a result.
+
+This type of operator definition works very neatly for any pull-based data structure, where we can define the operators recursively on the structure of the collection. For \code{Observable} things become a little more complicated since we are dealing with a push-based collection, were elements are never gathered as a concrete collection in memory, not allowing, as a consequence, any type of structural recursion.
+
+We will discuss in section \ref{future-work}, Future Work, how Event Calculus might be used as a technique to better define the semantics of operators for push-based collections.

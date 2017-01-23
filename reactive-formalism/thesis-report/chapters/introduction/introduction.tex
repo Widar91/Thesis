@@ -25,25 +25,26 @@ The goal of our work is to use mathematics as a tool to analyze today's commerci
 \section*{Contributions}
 \addcontentsline{toc}{section}{Contributions}
 
-To the best of our knowledge, we are not aware of any previous work which analyses reactive programming from a theoretical point of view or derives its types and interfaces though the use of mathematics.
+To the best of our knowledge, we are not aware of any previous work which analyses reactive programming from a theoretical standpoint or derives its types and interfaces though the use of mathematics.
 
-The most known attempt at defining reactive programming is the Reactive Manifesto\cite{reactive-manifesto}, a document that tries to describe reactive systems in terms of design principles and conceptual architecture. Although certainly insightful, we feel the document targets a more managing-focused audience as opposed to software developers and engineers. 
+The most commonly known attempt at defining reactive programming is the Reactive Manifesto\cite{reactive-manifesto}, a document that tries to describe reactive systems in terms of design principles and conceptual architecture. Although certainly insightful, we feel the document targets a more managing-focused audience as opposed to software developers and engineers. 
 
-Our work, on the other hand, aims at providing types and interfaces that describe the real essence of the reactive paradigm, aiding engineers that wish to use or develop reactive libraries in understanding and taking more informed decisions in the matter.
+Our work, on the other hand, aims at providing types and interfaces that describe the real essence of the reactive paradigm, aiding engineers that wish to use or develop reactive libraries in understanding and taking more informed decisions on the matter.
+
+This goal is achieved by providing a mathematical derivation of the reactive types, starting from they interactive counterparts and making use of theoretical concepts from category theory. These derived types are then used in the implementation of a formal reactive library where the purpose is showing how the theoretical definitions given to the various components can effectively be translated into working code. 
+
+Together with this formal definition of the paradigm, this work presents a reference implementation for a production level reactive library, as well as an highlight of the issues and challenges encountered when bridging from the theoretical foundations of reactive programming to a concrete implementation of a reactive API. 
+
+With the help of this report and the associated code repository, any software engineer interested in the topic should be able to understand the theoretical foundations behind the reactive paradigm and develop a reactive library in any language of choice.
 
 \section*{Overview}
 \addcontentsline{toc}{section}{Overview}
 
-Chapter 2 starts with ... bla bla bla
-
-\todo[inline]{Write overview}
+Chapter 1 introduces the scope of our research, providing a definition of reactive programming, the motivation and reasoning behinf our research and an overview of the current technologies and APIs that claim to belong to the world of reactive programming. Chapter 2 presents the mathematical derivation of the reactive types and interfaces, starting from the definition of \code{Iterable} and ending with that of \code{Observable}. Chapter 3 builds the bridge between the formal definition of the reactive types and a production level implementation of the paradigm, highlighting the technical issues as well as analyzing the relations with the previously discussed formal definitions. Chapter 4 concludes with final thought and future work.
 
 \section*{Notation \& Conventions}
 \addcontentsline{toc}{section}{Notation \& Conventions}
 
-
 In the exposition of our work we will make use of Haskell as the reference language. This decision is motivated by the language's strong connection with mathematics as well as it's clean syntax.
 
-All the code presented in this report, a minimal complete theoretical implementation and a full blown library implementation of a reactive library can be found at the associated code repository on Github ().
-
-\todo[inline]{Github link} 
+All the code presented in this report, a minimal complete theoretical implementation and a full blown library implementation of a reactive library can be found at the associated code repository on \href{https://github.com/Widar91/Thesis/tree/master/reactive-formalism/rx-hs}{Github}. 

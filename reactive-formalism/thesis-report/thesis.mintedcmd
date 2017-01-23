@@ -1,0 +1,1 @@
+pygmentize -l haskell -f latex -F tokenmerge -P style=default -P commandprefix=PYGdefault -F gobble:n=0 -P funcnamehighlighting=False -P mathescape=False -P texcomments=False -o "thesis.out.pyg" "src/subsciption.hs" 
