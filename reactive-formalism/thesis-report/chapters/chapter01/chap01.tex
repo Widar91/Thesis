@@ -17,7 +17,7 @@ The use of the term reactive program in scientific literature is dated back to t
 
 Interactive programs concretize the idea of a pull-based model of computation, where the program - the consumer in this case - has control over the speed at which data will be requested and handled. A perfect example of an interactive program is a control-flow structure such as a for-loop iterating over a collection of data: the program is in control of the speed at which data is retrieved from the containing collection and will request the next element only after it is done handling the current one.
 
-Reactive programs, on the contrary, embody the idea of a push-based - or event-driven - model of computation, where the speed at which the program interacts with the environment is determined by the environment rather than the program itself. In other words, it is now the producer of the data - i.e. the environment - who determines the speed at which events will occur whilst the program's role reduces to that of a silent observer that will react upon receiving events. Standard example of such systems are GUI applications dealing with various events originating from user input - e.g. mouse clicks, keyboard button presses - and programs dealing with stock market, social media or any other kind of asynchronous updates.  
+Reactive programs, on the contrary, embody the idea of a push-based - or event-driven - model of computation, where the speed at which the program interacts with the environment is determined by the environment rather than the program itself. In other words, it is now the producer of the data - i.e. the environment - who determines the speed at which events will occur whilst the program's role reduces to that of a silent observer that will react upon receiving events. Standard example of such systems are GUI applications dealing with various events originating from user input - e.g. mouse clicks, keyboard button presses - and programs dealing with stock markets, social media or any other kind of asynchronous updates.  
 
 \section{Why Reactive Programming Matters}
 \label{sec:whyrpmatters}
@@ -47,12 +47,12 @@ Programming languages, however, are not as well equipped when it comes to handli
 
 The aforementioned class of problems reflects the definition of reactive programs we analyzed in the previous section, where the environment asynchronously - i.e. at its own speed - pushes multiple events to the program. The reactive programming paradigm sets out to provide interfaces and abstractions to facilitate the modeling of such problems as push-based collections. 
 
-However, interfaces are only as good as the implementations that back them up. In the next section we are going to discuss and analyze various APIs and libraries that claim to embody the reactive paradigm, motivating our need for a mathematical formalization to aid in unifying these different approaches under a single set of interfaces, eliminating doubts and confusion when it comes to the essence of reactive programming. 
-
 \section{Related Work}
 
-Talk about FRP, Reactive Streams, Rx and other stuff. CIte survey paper
-Claim that Observable is dual of Iterator in order to justify the why.
+Interfaces are only as good as the implementations that back them up. In this section we are going to discuss and analyze various APIs and libraries that claim to embody the reactive paradigm, motivating our need for a mathematical formalization to aid in unifying these different approaches under a single set of interfaces, eliminating doubts and confusion when it comes to the essence of reactive programming. 
+
+\todo[inline]{Talk about FRP, Reactive Streams, Rx and other stuff. CIte survey paper
+Claim that Observable is dual of Iterator in order to justify the why.}
 
 \subsection{Reactive Extensions}
 \label{subsec:rx}
