@@ -3,13 +3,19 @@
 \label{chap:discussion}
 \addcontentsline{toc}{chapter}{Conclusion}
 
-\epigraph{\hspace{4ex}\textit{TBD}}{--- Lewis Carol,\\ \textit{Alice in Wonderland}}
+\epigraph{\hspace{4ex}\textit{''... and the mystery clears gradually away as each new discovery furnishes a step which leads on to the complete truth.''}}{--- Sir Arthur Conan Doyle,\\ \textit{Sherlock Holmes - The Adventure of the Engineer's Thumb}}
 
-Bla bla bla
+The main research goal of this work was to analyze and formalize what is commonly referred to as the reactive programming paradigm by means of a theoretical and mathematical approach. 
 
-\section*{Future Work}
+Starting from the intuition that the definitions and properties of interactive and reactive programs are the opposite of one another, we used the categorical concept of duality, as well as other useful constructs borrowed from mathematics, in order to simplify the definition of \code{Iterable} to its essential type and use this to derive the \code{Observable} type, representing the essence of reactive programs. We later showed how the \code{Observable} type corresponds to that of the continuation monad where side effects of its inner workings are made explicit in the type itself.
+
+The second part of this research focused on building a bridge between theory and practice, starting from the derived theoretical definition of \code{Observable} and building a reference implementation of a reactive library around it. In this section of the work, we augment the formal definition of \code{Observable} with features - subscriptions, schedulers, operators - that would make the type both useful and usable in a production environment, effectively resulting in a reactive library. We try to analyze each of the newly introduced features under both a practical - implementation details and challenges - and theoretical - meaning and impact of the previously derived formal types - point of view, with the purpose of stimulating awareness towards the problem rather than being prescriptive and forcing a specific solution upon the reader.
+
+Ultimately, this research contributes to the field of reactive programming by providing a formal derivation and analysis of the reactive types, a theory-biased implementation of these formal concepts and a production ready reactive library meant as a reference for software engineers interested in the field.
+
+\section*{Limitations \& Future Work}
 \label{future-work}
-\addcontentsline{toc}{section}{Future Work}
+\addcontentsline{toc}{section}{Limitations \& Future Work}
 
-\section*{Conclusion}
-\addcontentsline{toc}{section}{Conclusion}
+- limitations: nobody has done it before, which meant huge literature study in different, but similar fields that might give a hint on how to undertake the challenge.
+- future work: formalize operators with event calculus, find a theory for schedulers
