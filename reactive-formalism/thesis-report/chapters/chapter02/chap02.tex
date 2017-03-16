@@ -5,6 +5,8 @@
 
 As we saw in Chapter \ref{chap:reactiveprogramming}, the \code{Iterable} interface embodies the idea of a pull-based model of computation and is the commonly adopted solution to dealing with synchronous computations resulting in multiple values. In this chapter we are going to formalize the intuition that there exists a duality relation between interactive and reactive programs, as well as between pull and push models of computations, by deriving the \code{Observable} interface starting from its dual counterpart, the \code{Iterable}.
 
+\todo[inline]{Make sure Observable is defined before deriving it.}
+
 The derivation that follows will require the use of a number mathematical concepts such as \textit{categorical duality}, \textit{continuations}, \textit{(co)products}, \textit{(un)currying}, \textit{covariance}, \textit{contravariance} and \textit{functors}. We suggest the reader to get familiar with these topics before diving into the derivation. An accessible introduction to each can be found in Appendix \ref{app:a}.
 
 \section{Iterables}
@@ -12,13 +14,13 @@ The derivation that follows will require the use of a number mathematical concep
 
 An \code{Iterable} is a programming interface which enables the user to traverse a collection of data, abstracting over the underlying implementation\cite{gamma1995design}.
 
-The interface and semantics of \code{Iterable}s were first introduced by the Gang of Four though their Iterator pattern\cite{gamma1995design}; today's most used programming languages introduce the \code{Iterable} as the root interface for standard pull collections APIs - exposing concrete implementations such as maps, sets, indexed sequences and so on. 
+The interface and semantics of \code{Iterable}s were first introduced by the Gang of Four though their Iterable/Iterator pattern\cite{gamma1995design}; today's most used programming languages introduce the \code{Iterable} as the root interface for standard pull collections APIs - exposing concrete implementations such as maps, sets, indexed sequences and so on. 
 
-The \code{Iterable} interface is generally fixed across programming languages, with the exception of naming conventions - C\# and related languages call it IEnumerable - and slight differences in the types, as we can see from the following definitions.
+The \code{Iterable} interface is generally fixed across programming languages, with the exception of naming conventions - e.g. IEnumerable (C\# ), Iterable (Java), Iterator/Generator (Python) - and slight differences in the types. Below we show two example definitions of these interfaces and their types.
 
 \haskellcode{src/iterable_interface.hs}
 
-Although the essence of the pattern is preserved by both definitions, we claim that the C\# version more clearly and accurately reflects the way side effects play a role in the usage of the interface: \code{moveNext} contains all the side effects of traversing the underlying collection and retrieving the next value while \code{current} can inspect the retrieved value multiple times in a pure way. The Java version, on the other hand, embeds the side effect in the \code{next} function, making it impossible to inspect the current value multiple times. For this reason and without loss of generality, we will make use of the C\# definition - modulo naming conventions - in the reminder of the discussion:
+Although the essence of the pattern is preserved by both definitions, we claim that the C\# version more clearly and accurately reflects the way side effects play a role in the usage of the interface: \code{moveNext} contains all the side effects of traversing the underlying collection and retrieving the next value while \code{current} can inspect the retrieved value multiple times in a pure way. The Java version, on the other hand, embeds the side effect in the \code{next} function, making it impossible to inspect the current value multiple times. For this reason we will make use of the C\# definition - modulo naming conventions - in the reminder of the discussion:
 
 \haskellcode{src/iterable_interface_final.hs}
 
@@ -34,13 +36,14 @@ By merging these considerations with the notion of coproducts and Haskell's \cod
 
 \haskellcode{src/iterable_coproducts_maybe.hs}
 
-Note how, theoretically, \code{getIterator} could also throw an exception. We assume here, without loss of generality, that the function will never throw and will always be able to return an \code{Iterator} instance.
+Note how, theoretically, \code{getIterator} could also throw an exception, as it operates within the \code{IO} monad. We assume in the remainder of the discussion that this will never happen and a call to the function will always return an \code{Iterator} instance. The reason for this assumption is that \code{getIterator} is nothing more than a factory method for \code{Iterator}. The only way it could possibly throw an exception is if it fails instantiating the object, which could only happen in extreme cases - e.g. when the runtime does not have any memory left for allocation - hence the omission of \code{Either} in the type. Note that, even if the underlying collection does not exist, \code{getIterator} would still correctly return an \code{Iterator}, which would then throw once \code{moveNext} is called and access to a non-existing collection is attempted.
 
-The next step is to forget about data types and express our interfaces as simple types.
+The next step is to forget about data types and express our interfaces as simple types. This is a simple simplification of Haskell's syntax which allows us to eliminate the type constructors introduced by the \code{newtype} and reason about \code{Iterable/Iterator} without any  syntactic clutter.
 
 \haskellcode[firstline=1,lastline=2]{src/iterable_types.hs}
 
-At this point, we want to put aside the operational concerns regarding exceptions and termination and assume the \code{Iterator} function will always return a value of type \code{a}.
+At this point, we want to put aside the operational concerns regarding exceptions and termination and assume the \code{Iterator} function will always return a value of type \code{a}. 
+The purpose of this simplification is to make the discussion that follows easier to read and it's justified by the fact that the exceptions and termination play no role in the properties of \code{Iterable} we are going to analyze next. Note that setting these concerns aside is only temporary, they will be reintroduced once we have derived \code{Observable} later in the chapter. 
 
 \haskellcode[firstline=4,lastline=5]{src/iterable_types.hs}
 
@@ -70,16 +73,16 @@ If coke is a subtype of drink, then whenever I am asked for a drink vending mach
 
 With \code{Iterator} being a getter itself, it should be clear how covariance plays the same role as with \code{Iterable}.
 
-To formally prove the intuition of a covariant relation, we instantiate the \code{Iterable}/\code{Iterator} types to a covariant \code{Functor} and prove its laws in the following snippet.
+To formally prove the intuition of a covariant relation, we instantiate the \code{Iterable}/\code{Iterator} types to a covariant \code{Functor}. A proof of the associated \code{Functor} laws can be found in Appendix \ref{app:c}
 
-\haskellcode{src/iterable_functor.hs}
+\haskellcode[firstline=4,lastline=17]{src/iterable_functor.hs}
 
 For the sake of completeness, it is worth mentioning that \code{Iterable} is, among others, also an instance of Applicative Functor and Monad. Although certainly interesting from a theoretical perspective, showing these instances and proving the associated laws goes beyond the scope of this work. Nontheless, we will see in the next section how these concepts are relevant in expressing and motivating the duality between Iterables and Observables.
 
 \section{Applying Duality}
 \label{sec:applyingduality}
 
-By now, the reader should be somehow familiar with the concept of duality, as it has appeared many times throughout our discussion in concepts such as pull and push models of computation or interactive and reactive programs. Duality is, in fact, a very important general theme that has manifestations in almost every area of mathematics\cite{gowers2010princeton} (See Appendice \ref{app:a} for an introductory discussion on the topic). 
+By now, the reader should be somehow familiar with the concept of duality, as it has appeared many times throughout our discussion in concepts such as pull and push models of computation or interactive and reactive programs. Duality is, in fact, a very important general theme that has manifestations in almost every area of mathematics\cite{gowers2010princeton} (See Appendix \ref{app:a} for an introductory discussion on the topic). 
 
 Starting from the fact that the \code{Iterable} interface embodies the idea of interactive programming, let's use the principle of duality to derive the \code{Observable} interface and see how it relates to the concept of reactive programming. In practice, this translates to the simple task of flipping the function arrows in the \code{Iterable} interface, taking us from a function resulting in a value of type \code{a} to one accepting an \code{a}.
 
@@ -117,23 +120,23 @@ Analyzing \code{Iterable} within this framework is easy, the \code{Iterator} fun
 
 The \code{Observer} function, on the contrary, introduces a need for a value of type \code{a}, resulting in a contravariant relation w.r.t. \code{a}. Again, the \code{Observable} function is the result of applying \code{Observer} to itself; surprisingly, this results in \code{a} being in a positive position. The intuition is easily understood by thinking about the rules of arithmetic multiplication: \code{a} is in negative position w.r.t. the \code{Observer} function, whereas the \code{Observer} is in negative position w.r.t. the \code{Observable}. This leads to \code{a} being negated twice, ultimately resulting in a positive position within the \code{Observable} function. 
 
-\haskellcode[firstline=3,lastline=17]{src/polarity.hs}
+\haskellcode[lastline=15]{src/polarity.hs}
 
 Before we formalize this claim, let's convince ourselves that \code{Observable}s effectively produces a value of type \code{a} by looking at an example:
 
-\haskellcode[firstline=21]{src/polarity.hs}
+\haskellcode[firstline=19]{src/polarity.hs}
 
 It is clear from this implementation that \code{randomValueObs} indeed produces a value of type \code{Int}, whereas the \code{Observer} introduces a need for such value in order to be applied. For more details on the positivity and negativity of functions and type variables, see \cite{pos-neg}\cite{pos-neg2}.
 
-Just as we did with \code{Iterable/Iterator}, we can formally prove the covariant and contravariant relations between \code{Observable/Observer} and their base type \code{a} by instantiating them to \code{Functor} and \code{Contravariant (Functor)} respectively, as well as proving the laws.
+Just as we did with \code{Iterable/Iterator}, we can formally prove the covariant and contravariant relations between \code{Observable/Observer} and their base type \code{a} by instantiating them to \code{Functor} and \code{Contravariant (Functor)} respectively. Once again, a proof of the associated laws can be found in Appendix \ref{app:c}.
 
-\haskellcode{src/observable_functor.hs}
+\haskellcode[firstline=4,lastline=17]{src/observable_functor.hs}
 
-The reader acquainted with functional programming will easily see the resemblance between the \code{Observable} type and a CPS function (See Appendice \ref{app:a}).
+The reader acquainted with functional programming will easily see the resemblance between the \code{Observable} type and a CPS function (See Appendix \ref{app:a}).
 
 \haskellcode{src/obs_cont.hs}
 
-It is clear how an \code{Observable} is nothing more than a special case of a CPS function where the result type \code{r} is instantiated to \code{IO ()}. To convince ourselves of this equivalence, let's think about the definition of a CPS function, i.e. a suspended computation which, given another function - the continuation - as argument, will produce its final result. This definition suits perfectly the idea behind \code{Observable} discussed in Section \ref{subsec:rx}: a function which will do nothing - i.e. is suspended - until it is subscribed to by an \code{Observer}.
+The above code shows how \code{Observable} is nothing more than a special case of a CPS function where the result type \code{r} is instantiated to \code{IO ()}. To convince ourselves of this equivalence, let's think about the definition of a CPS function, i.e. a suspended computation which, given another function - the continuation - as argument, will produce its final result. This definition suits perfectly the idea behind \code{Observable} discussed in Section \ref{subsec:rx}: a function which will do nothing - i.e. is suspended - until it is subscribed to by an \code{Observer}.
 
 A continuation, on the other hand, represents the future of the computation, a function from an intermediate result to the final result\cite{newbern-monads}; in the context of \code{Observable}s, the continuation represents the \code{Observer}, a function specifying what will happen to a value produced by the \code{Observable}, whenever it will become available, that is, whenever it will be pushed into the \code{Observer}. Since a continuation can be called multiple times within the surrounding CPS context, it is easy to see how this mathematical concept allows us to deal with multiple values produced at different times in the future.
 
@@ -173,7 +176,7 @@ Informally, an \code{Observable} stream might not only produce one or more value
 
 Just as with \code{Iterable}, the introduction of \code{Either SomeException} allows us to express that the \code{Observer} can handle unexpected exceptions, while the \code{Maybe} reflects the possibility for a stream to end and propagate no more values. 
 
-Unfortunately, this type is very hard to read as well as understand for someone new to the topic. Looking at the matter from a functionality point of view, what we really need is for our CPS function - i.e. the \code{Observable} - to accept two additional continuations, one dealing with completion and one with exceptions. We can achieve this by first noticing that our type is nothing more than a coproduct - the same that we introduced previously for \code{Iterable} - of three base types: \code{a + SomeException + ()}. By utilizing the notion of product - the dual of coproduct - we can split the function handling the initial type into three different ones. This brings us to the final version of our reactive interfaces for push-base collections\footnote{The two definitions are equivalent also from an implementation point of view, the first simulating the second though the use of pattern matching.}
+Unfortunately, this type is very hard to read as well as understand for someone new to the topic. Looking at the matter from a functionality point of view, what we would like is for our CPS function - i.e. the \code{Observer} - to be able to accept three continuations, one dealing with a proper value, one with completion and one with exceptions, as these are the three possible effects at play. We can achieve this by first noticing that our type is nothing more than a coproduct - the same that we introduced previously for \code{Iterable} - of three base types: \code{a + SomeException + ()}. By utilizing the notion of product - the dual of coproduct - we can split the function handling the initial type into three different ones. This brings us to the final version of our reactive interfaces for push-base collections\footnote{The two definitions are equivalent also from an implementation point of view, the first simulating the second though the use of pattern matching.}
 
 \haskellcode{src/observable_newtype.hs}
 
@@ -224,4 +227,4 @@ This example brings us to the following observation: \code{Observable}s are capa
 
 At this point in the discussion we have arrived to a working implementation of a push based collection purely derived from mathematical and categorical concepts such as duality and continuations. In spite of being very insightful for theoretical discussions on the properties and relations of \code{Observable} and the continuation monad, this implementation of the reactive types is impractical in the context of a full fledged API. In the next Chapter we will take the necessary steps to build the bridge between theory and practice, providing a reference implementation of \code{Observable} more adapt to be utilized in real world applications.
 
-For a full implementation of a Reactive Library based on the ideas presented in this section, aimed at highlighting the strong connection between \code{Observable} and other already existing functional structures from which it composes, see Appendice \ref{app:b}. 
+For a full implementation of a Reactive Library based on the ideas presented in this section, aimed at highlighting the strong connection between \code{Observable} and other already existing functional structures from which it composes, see Appendix \ref{app:b}. 

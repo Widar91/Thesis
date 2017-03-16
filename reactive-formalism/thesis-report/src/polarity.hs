@@ -1,5 +1,3 @@
-{-
-
 f   ::  a ->  b
      = -a -> +b
 
@@ -16,7 +14,7 @@ observable
      = -(-a -> ()) -> ()
      =  (+a -> ()) -> ()
 
--}
+-------------------------------------------------------------------------------
 
 randomValueObs :: Observable Int
 randomValueObs = Observable $ \observer -> do

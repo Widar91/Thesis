@@ -1,15 +1,31 @@
 import Control.Monad
 
-{-
-    Using a type synonim insead of Haskell's newtypes, 
-    in order to avoid clutter in our proofs:
+
+newtype Iterator a = Iterator 
+    { moveNext :: () -> IO a 
+    } 
+
+instance Functor Iterator where
+    fmap f ia  = Iterator $ \() -> liftM f (moveNext ia ()) 
+
+
+newtype Iterable a = Iterable 
+    { getIterator :: () -> IO (Iterator a) 
+    } 
+
+instance Functor Iterable where
+    fmap f iia = Iterable $ \() -> liftM (fmap f) (getIterator iia ())
+
+
+    -- Using a type synonym instead of Haskell's newtypes, 
+    -- in order to avoid clutter in our proofs:
 
     type Iterator a = () -> IO a
 
     fmap :: (a -> b) -> Iterator a -> Iterator b
     fmap f ia = \() -> ia () >>= return . f
 
-    identity:
+    -- identity:
           fmap id                                        
             -- eta abstraction 
         = \ia -> fmap id ia                              
@@ -24,7 +40,7 @@ import Control.Monad
             -- definition of
         = id
 
-    composition:
+    -- composition:
           (fmap p) . (fmap q)                                                              
             -- eta abstraction
         = \ia -> ((fmap p) . (fmap q)) ia                                                  
@@ -51,29 +67,24 @@ import Control.Monad
             -- eta reduction
         = fmap (p . q)
       
-    * monad right identity:
-        m >>= return = m
+    -- * monad right identity:
+            m >>= return = m
       
-      monad left identity:
-        return a >>= f = f a  
+    --   monad left identity:
+            return a >>= f = f a  
       
-      defintion of (.): 
-        (.) :: (b -> c) -> (a -> b) -> a -> c
-        (f . g) a = f (g a) 
--}
+    --  defintion of (.): 
+            (.) :: (b -> c) -> (a -> b) -> a -> c
+            (f . g) a = f (g a) 
 
-newtype Iterator a = Iterator { moveNext :: () -> IO a } 
+    ---------------------------------------------------------------------------
 
-instance Functor Iterator where
-    fmap f ia  = Iterator $ \() -> liftM f (moveNext ia ()) 
-
-{-
     type Iterable a = () -> IO (Iterator a)
 
     fmap :: (a -> b) -> Iterable a -> Iterable b
     fmap f iia = \() -> iia () >>= return . fmap f
 
-    identity:
+    -- identity:
           fmap id                                       
             -- eta abstraction 
         = \iia -> fmap id iia                           
@@ -90,7 +101,7 @@ instance Functor Iterator where
             -- definition of id
         = id
 
-    composition:
+    -- composition:
           (fmap p) . (fmap q)                                                          
             -- eta abstraction  
         = \iia -> ((fmap p) . (fmap q)) iia                                            
@@ -118,9 +129,3 @@ instance Functor Iterator where
         = \iia -> fmap (p . q) iia                                                     
             -- eta reduction   
         = fmap (p . q)
--}
-
-newtype Iterable a = Iterable { getIterator :: () -> IO (Iterator a) } 
-
-instance Functor Iterable where
-    fmap f iia = Iterable $ \() -> liftM (fmap f) (getIterator iia ())

@@ -1,19 +1,35 @@
 import Data.Functor.Contravariant
 
-{-
+
+newtype Observer a = Observer   
+    { onNext :: a -> IO () 
+    } 
+
+instance Contravariant Observer where 
+    contramap f ob = Observer $ onNext ob . f    
+
+
+newtype Observable a = Observable 
+    { subscribe :: Observer a -> IO () 
+    } 
+
+instance Functor Observable where
+    fmap f ooa = Observable $ subscribe ooa . contramap f
+
+
     type Observer a = a -> IO ()
 
     contramap :: (a -> b) -> Observer b -> Observer a
     contramap f ob = ob . f
 
-    identity:
+    -- identity:
           contramap id 
         = \ob -> contramap id ob
         = \ob -> ob . id
         = \ob -> ob
         = id
         
-    composition:
+    -- composition:
           (contramap p) . (contramap q)
         = \ob -> ((contramap p) . (contramap q)) ob
         = \ob -> contramap p (contramap q ob)
@@ -22,20 +38,15 @@ import Data.Functor.Contravariant
         = \ob -> ob . (q . p)
         = \ob -> contramap (q . p) ob
         = contramap (q . p)
--}
 
-newtype Observer   a = Observer   { onNext :: a -> IO () } 
+    ---------------------------------------------------------------------------
 
-instance Contravariant Observer where 
-    contramap f ob = Observer $ onNext ob . f    
-
-{-
     type Observable a = Observer a -> IO ()
 
     fmap :: (a -> b) -> Observable a -> Observable b
     fmap f ooa = \ob -> ooa (contramap f ob)
 
-    identity:
+    -- identity:
           fmap id 
         = \ooa -> fmap id ooa 
         = \ooa -> \ob -> ooa (contramap id ob)
@@ -43,7 +54,7 @@ instance Contravariant Observer where
         = \ooa -> ooa
         = id
 
-    composition:
+    -- composition:
           fmap p . fmap q
         = \ooa -> (fmap p . fmap q) ooa
         = \ooa -> fmap p (fmap q ooa)
@@ -54,9 +65,3 @@ instance Contravariant Observer where
         = \ooa -> \oc -> ooa (contramap (p . q) oc)
         = \ooa -> fmap (p . q) ooa
         = fmap (p . q)
--}
-
-newtype Observable a = Observable { subscribe :: Observer a -> IO () } 
-
-instance Functor Observable where
-    fmap f ooa = Observable $ subscribe ooa . contramap f
