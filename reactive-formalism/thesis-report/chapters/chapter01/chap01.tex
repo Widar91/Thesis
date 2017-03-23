@@ -51,11 +51,6 @@ The aforementioned class of problems reflects the definition of reactive program
 
 Interfaces are only as good as the implementations that back them up. In this section we are going to discuss and analyze the most commonly known APIs and libraries that claim to embody the reactive paradigm, motivating our need for a mathematical formalization to aid in unifying these different approaches under a single set of interfaces. 
 
-For a more extensive discussion of reactive programming libraries, including 
-
-\todo[inline]{Talk about FRP, Reactive Streams, Rx and other stuff. CIte survey paper
-Claim that Observable is dual of Iterator in order to justify the why.}
-
 \subsection{Reactive Extensions}
 \label{subsec:rx}
 
@@ -67,16 +62,26 @@ Although originally based on theoretically sound concepts, this polyglot family 
 
 Rx defines itself as a a library for composing asynchronous and event based (reactive) programs by using observable sequences\cite{Rx.Net}. At its core, it expose two interfaces, \code{Observable} and \code{Observer}. An \code{Observable} is the producer of a sequence of events which are pushed to an \code{Observer}, who will act upon them and produce side effects. Furthermore, the library offers a number of additional constructs such as \code{Subscription}, \code{Scheduler} and operators, that facilitate programming with asynchronous events and make the API more appealing for use in a production environment.
 
-\subsection{Reactive Streams}
-
-bla\cite{meijer2014reactive}
-Try to define itself as reactive programming, mathematics prove the claim wrong, they implement asynchronous iterables. This does not make them useless, yet they are not a good solution for the problem we are trying to solve.
-
-\todo[inline]{Probably put the derivation of Reactive Streams in the appendix, it's not really the focus, I guess.}
-
 \subsection{Functional Reactive Programming}
 \label{frp}
+\todo{Finish it!}
 Much researched topic, beautiful in theory, yet based on continuous time, un-achievable with computers where time is inherently discrete. Connel Elliot, the inventor of FRP, says that commercial implementations are far from the original theory and do not really represent the essence of FRP
+
+\subsection{Reactive Streams}
+
+Reactive Streams is an initiative to provide a standard for asynchronous stream processing with non-blocking back pressure\cite{Reactive-Streams}. As both the name and the description on the website\cite{Reactive-Streams} suggest, this API sets out to provide a standard set of interfaces addressing the class of problems identified previously as reactive. 
+
+The set of interface exposed by Reactive Streams is nearly identical to the Reactive Extensions' ones, the difference being an additional form of control over the producer of data, non-blocking back pressure. With this term, the promoters of Reactive Streams refer to a way for the consumer of the data to control the speed at which the producer will push its elements downstream. 
+
+As great as this sounds on paper, mathematics unfortunately proves it impossible: Reactive Streams are not reactive and back pressure is not applicable to the class of programming problems defined as reactive.
+
+As Erik Meijer proves in his talk "Let Me Calculate That For You" at Lambda Jam 2014\cite{meijer2014reactive}, the interfaces exposed by the Reactive Streams initiative are equivalent - modulo naming conventions - to the more familiar \code{AsyncIterable}, a special version of \code{Iterable} that returns it's element to the caller in an asynchronous fashion. This allows for the implementation of back pressure, as the underlying model of computation is still pull-based, i.e. interactive.
+
+A last point worth discussing before moving on is the claim that back pressure is not applicable to the class of problems we previously identified as reactive. As the reader might remember from Berry's definition, reactive programs interact with the environment at a speed at which determined by the environment and not by the program itself\cite{berry1991reactive}; this definition makes the two concepts of reactive programs and back pressure incompatible. 
+
+From an informal perspective, it is easy to understand why: the speed at which events originated from reactive sources - such as mouse movements, stock ticks, GUI components and hardware sensors - occur is fully determined by the producer of such events - i.e. the environment. It would make no sense - and would be effectively impossible - for a program to ask a user to stop producing mouse movements or the stock market to slow down in producing stock ticks, because it cannot process its events fast enough. In such a context, a program is forced to to handle the overflow on its end, by taking actions such as buffering or dropping events.
+
+The fact that Reactive Streams are ultimately not reactive does not make the API useless, yet it contributes to a general confusion and pollution in the terminology among the field of reactive programming.
 
 \subsection{Reactive Manifesto}
 
@@ -86,5 +91,4 @@ The Reactive Manifesto\cite{reactive-manifesto} is a document that aims at provi
 
 Due to overlapping terminology, the principles outlined by the Manifesto are often mixed or confused with those defining reactive programming, with the former focusing on the higher level of abstraction of architecture and design principles of application - targeting a more management-focused audience and lacking any type of scientificity - and the latter defining a set of interfaces aimed at solving a precisely defined class of problems.
 
-\section{Related Work}
-Discuss stuff that I read in order to do this work, see repo. Most probably move this section to Introduction or separate chapter.
+\todo[inline]{CIte survey paper? Probably a bit outdated.}
