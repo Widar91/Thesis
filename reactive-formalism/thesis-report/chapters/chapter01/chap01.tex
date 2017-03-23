@@ -49,7 +49,10 @@ The aforementioned class of problems reflects the definition of reactive program
 
 \section{Related Work}
 
-Interfaces are only as good as the implementations that back them up. In this section we are going to discuss and analyze various APIs and libraries that claim to embody the reactive paradigm, motivating our need for a mathematical formalization to aid in unifying these different approaches under a single set of interfaces, eliminating doubts and confusion when it comes to the essence of reactive programming. 
+Interfaces are only as good as the implementations that back them up. In this section we are going to discuss and analyze the most commonly known APIs and libraries that claim to embody the reactive paradigm, motivating our need for a mathematical formalization to aid in unifying these different approaches under a single set of interfaces. For a more extensive discussion of reactive programming libraries, including 
+
+
+The most commonly known attempt at defining reactive programming is the Reactive Manifesto\cite{reactive-manifesto}, a document that tries to describe reactive systems in terms of design principles and conceptual architecture. Although certainly insightful, we feel the document targets a more management-focused audience and certainly lacks any type of scientificity. 
 
 \todo[inline]{Talk about FRP, Reactive Streams, Rx and other stuff. CIte survey paper
 Claim that Observable is dual of Iterator in order to justify the why.}
@@ -57,7 +60,17 @@ Claim that Observable is dual of Iterator in order to justify the why.}
 \subsection{Reactive Extensions}
 \label{subsec:rx}
 
+Reactive Extensions - also known as Rx - is the standard library for programming in a reactive way. Originally published by Microsoft as an API for the C\# and Javascript languages, it was later ported to the JVM world by Netflix as an open source project, gaining much traction in the developers community and resulting in various implementations for the currently most commonly used programming languages\cite{ReactiveX}.
+
+The intuition and theory on which Reactive Extensions are built originated from the mind of Erik Meijer\cite{meijer2010observable} and will be at the basis of the work developed in this thesis, where we will use mathematical constructs and derivations in order to prove the correspondence between the interfaces exposed by this library and the essence of reactive programming we will derive.
+
+Although originally based on theoretically sound concepts, this polyglot family of libraries diverged from a purely reactive implementation, mainly due to their open source nature, independent development and, most importantly, to the lack of a unifying reference formalization of the reactive paradigm. This last aspect further motivates the need for our research.
+
+Rx defines itself as a a library for composing asynchronous and event based (reactive) programs by using observable sequences\cite{Rx.Net}. At its core, it expose two interfaces, \code{Observable} and \code{Observer}. An \code{Observable} is the producer of a sequence of events which are pushed to an \code{Observer}, who will act upon them and produce side effects. Furthermore, the library offers a number of additional constructs such as \code{Subscription}, \code{Scheduler} and operators, that facilitate programming with asynchronous events and make the API more appealing for use in a production environment.
+
 \subsection{Reactive Streams}
+
+bla\cite{meijer2014reactive}
 Try to define itself as reactive programming, mathematics prove the claim wrong, they implement asynchronous iterables. This does not make them useless, yet they are not a good solution for the problem we are trying to solve.
 
 \todo[inline]{Probably put the derivation of Reactive Streams in the appendix, it's not really the focus, I guess.}
