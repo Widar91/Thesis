@@ -3,9 +3,7 @@
 
 \epigraph{\hspace{4ex}\textit{"It was much pleasanter at home," thought poor Alice, "when one wasn't always growing larger and smaller, and being ordered about by mice and rabbits. I almost wish I hadn't gone down the rabbit-hole -- and yet -- and yet -- ..."}}{--- Lewis Carol,\\ \textit{Alice in Wonderland}}
 
-As we saw in Chapter \ref{chap:reactiveprogramming}, the \code{Iterable} interface embodies the idea of a pull-based model of computation and is the commonly adopted solution to dealing with synchronous computations resulting in multiple values. In this chapter we are going to formalize the intuition that there exists a duality relation between interactive and reactive programs, as well as between pull and push models of computations, by deriving the \code{Observable} interface starting from its dual counterpart, the \code{Iterable}.
-
-\todo[inline]{Make sure Observable is defined before deriving it.}
+As we saw in Chapter \ref{chap:reactiveprogramming}, the \code{Iterable} interface embodies the idea of a pull-based model of computation and is the commonly adopted solution to dealing with synchronous computations resulting in multiple values. In this chapter we are going to formalize the intuition that there exists a duality relation between interactive and reactive programs\citep{meijer2010observable}, as well as between pull and push models of computations, by deriving the \code{Observable} interface - introduced in Section \ref{subsec:rx} - starting from its dual counterpart, the \code{Iterable}.
 
 The derivation that follows will require the use of a number mathematical concepts such as \textit{categorical duality}, \textit{continuations}, \textit{(co)products}, \textit{(un)currying}, \textit{covariance}, \textit{contravariance} and \textit{functors}. We suggest the reader to get familiar with these topics before diving into the derivation. An accessible introduction to each can be found in Appendix \ref{app:a}.
 

@@ -47,12 +47,11 @@ Programming languages, however, are not as well equipped when it comes to handli
 
 The aforementioned class of problems reflects the definition of reactive programs we analyzed in the previous section, where the environment asynchronously - i.e. at its own speed - pushes multiple events to the program. The reactive programming paradigm sets out to provide interfaces and abstractions to facilitate the modeling of such problems as push-based collections. 
 
-\section{Related Work}
+\section{Reactive Programming IRL}
 
-Interfaces are only as good as the implementations that back them up. In this section we are going to discuss and analyze the most commonly known APIs and libraries that claim to embody the reactive paradigm, motivating our need for a mathematical formalization to aid in unifying these different approaches under a single set of interfaces. For a more extensive discussion of reactive programming libraries, including 
+Interfaces are only as good as the implementations that back them up. In this section we are going to discuss and analyze the most commonly known APIs and libraries that claim to embody the reactive paradigm, motivating our need for a mathematical formalization to aid in unifying these different approaches under a single set of interfaces. 
 
-
-The most commonly known attempt at defining reactive programming is the Reactive Manifesto\cite{reactive-manifesto}, a document that tries to describe reactive systems in terms of design principles and conceptual architecture. Although certainly insightful, we feel the document targets a more management-focused audience and certainly lacks any type of scientificity. 
+For a more extensive discussion of reactive programming libraries, including 
 
 \todo[inline]{Talk about FRP, Reactive Streams, Rx and other stuff. CIte survey paper
 Claim that Observable is dual of Iterator in order to justify the why.}
@@ -78,3 +77,14 @@ Try to define itself as reactive programming, mathematics prove the claim wrong,
 \subsection{Functional Reactive Programming}
 \label{frp}
 Much researched topic, beautiful in theory, yet based on continuous time, un-achievable with computers where time is inherently discrete. Connel Elliot, the inventor of FRP, says that commercial implementations are far from the original theory and do not really represent the essence of FRP
+
+\subsection{Reactive Manifesto}
+
+Whilst not being an API in and of itself, the Reactive Manifesto is worth a mention in our discussion, as it is often wrongly associated to the context of reactive programming.
+
+The Reactive Manifesto\cite{reactive-manifesto} is a document that aims at providing a definition of reactive systems. With this term, the document refers to a set of architectural design principles for building modern systems that are prepared to meet the technical demands that applications face today.\cite{manifesto-vs-programming}. 
+
+Due to overlapping terminology, the principles outlined by the Manifesto are often mixed or confused with those defining reactive programming, with the former focusing on the higher level of abstraction of architecture and design principles of application - targeting a more management-focused audience and lacking any type of scientificity - and the latter defining a set of interfaces aimed at solving a precisely defined class of problems.
+
+\section{Related Work}
+Discuss stuff that I read in order to do this work, see repo. Most probably move this section to Introduction or separate chapter.
