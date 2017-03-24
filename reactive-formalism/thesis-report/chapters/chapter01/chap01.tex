@@ -62,11 +62,6 @@ Although originally based on theoretically sound concepts, this polyglot family 
 
 Rx defines itself as a a library for composing asynchronous and event based (reactive) programs by using observable sequences\cite{Rx.Net}. At its core, it expose two interfaces, \code{Observable} and \code{Observer}. An \code{Observable} is the producer of a sequence of events which are pushed to an \code{Observer}, who will act upon them and produce side effects. Furthermore, the library offers a number of additional constructs such as \code{Subscription}, \code{Scheduler} and operators, that facilitate programming with asynchronous events and make the API more appealing for use in a production environment.
 
-\subsection{Functional Reactive Programming}
-\label{frp}
-\todo{Finish it!}
-Much researched topic, beautiful in theory, yet based on continuous time, un-achievable with computers where time is inherently discrete. Connel Elliot, the inventor of FRP, says that commercial implementations are far from the original theory and do not really represent the essence of FRP
-
 \subsection{Reactive Streams}
 
 Reactive Streams is an initiative to provide a standard for asynchronous stream processing with non-blocking back pressure\cite{Reactive-Streams}. As both the name and the description on the website\cite{Reactive-Streams} suggest, this API sets out to provide a standard set of interfaces addressing the class of problems identified previously as reactive. 
@@ -83,6 +78,13 @@ From an informal perspective, it is easy to understand why: the speed at which e
 
 The fact that Reactive Streams are ultimately not reactive does not make the API useless, yet it contributes to a general confusion and pollution in the terminology among the field of reactive programming.
 
+\subsection{Functional Reactive Programming}
+\label{frp}
+
+Functional Reactive Programming - also known as FRP - is a general paradigm for describing dynamic, time-varying information. Introduced by Conal Elliott in 1997\cite{elliott1997functional}, it is precisely defined by a simple set of data types and associated denotational semantics. 
+
+As criticized by the author himself, the term has recently been used incorrectly to describe systems like Elm, Bacon, and Reactive Extensions\cite{elliott2015frp}. Albeit the similar names, Functional Reactive Programming  and Reactive Programming are two separate theories and differ from each other in certain fundamental aspects: where the former models time-varying values over continuous time, the latter is focused on asynchronous data streams and completely abstracts over the concept of time. For these reasons, we are not going to further discuss FRP in this report.
+
 \subsection{Reactive Manifesto}
 
 Whilst not being an API in and of itself, the Reactive Manifesto is worth a mention in our discussion, as it is often wrongly associated to the context of reactive programming.
@@ -90,5 +92,3 @@ Whilst not being an API in and of itself, the Reactive Manifesto is worth a ment
 The Reactive Manifesto\cite{reactive-manifesto} is a document that aims at providing a definition of reactive systems. With this term, the document refers to a set of architectural design principles for building modern systems that are prepared to meet the technical demands that applications face today.\cite{manifesto-vs-programming}. 
 
 Due to overlapping terminology, the principles outlined by the Manifesto are often mixed or confused with those defining reactive programming, with the former focusing on the higher level of abstraction of architecture and design principles of application - targeting a more management-focused audience and lacking any type of scientificity - and the latter defining a set of interfaces aimed at solving a precisely defined class of problems.
-
-\todo[inline]{CIte survey paper? Probably a bit outdated.}
