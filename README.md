@@ -81,3 +81,4 @@ Harvard University | [Harvard - CS 152: Programming Languages](http://www.seas.h
 * [Temporal Logic and FRP](http://www.slideshare.net/SergeiWinitzki/temporal-logic-and-functional-reactive-programming)
 * [Continuation-based relative-time FRP](http://www.paolocapriotti.com/blog/2012/06/04/continuation-based-relative-time-frp/)
 * [Event Calculus Explained](https://www.doc.ic.ac.uk/~mpsha/ECExplained.pdf)
+
