@@ -48,13 +48,18 @@ With the help of this report and the associated code repository, any software en
 The work presented in this report will focus on answering the following research questions:
 
 \begin{itemize}
-\item \textbf{What does it mean to be reactive? Which class of problems does it solve? How does this relate to the real world libraries that claim to be reactive?}
+\item \textbf{Which class of problems does reactive programming solve? How does this relate to the real world libraries that claim to be reactive?}
 
 Before any attempts at a formalization can be carried out, we need to clearly identify the class of problems the reactive paradigm is fit for solving, understanding what are the issues and concerns such problems present, thus setting the basis for a formalization to be defined. Additionally, we are going to analyze the current libraries and APIs that claim to be reactive, and see how they relate to our definition.
 
-\item \textbf{Can we use existing mathematical and computer science theory in order to formally derive a definition for reactive programming?}
+\item \textbf{How can we use existing mathematical and computer science theory in order to formally derive a definition for reactive programming?}
 
-Once we have a clear definition of the meaning of reactive and the class of problems it solves, we are going to look at existing theories in mathematics and computer science that would allow us to derive a set of types/interfaces representing the essence of reactive programming. In order to make our work sound, we will then need to prove the connection between the derived types and the definition resulting from the first research question.
+Once we have a clear definition of the meaning of reactive programming and the class of problems it solves, we are going to look at existing theories in mathematics and computer science that would allow us to derive a set of types/interfaces representing the essence of reactive programming. In order to make our work sound, we will then need to prove the connection between the derived types and the definition resulting from the first research question.
+
+\item \textbf{How can we bridge from the derived theoretical foundations of reactive programming to a concrete API that, whilst maintaining its mathematical roots, is fit for use in a production environment?}
+
+Although appealing under multiple aspects, a set of interfaces is not concrete enough to have an impact in our daily lives as software engineers. The last step of our work will focus on building a reactive API directly from the theory discussed in the previous point, providing a reference point and set of good practices applicable to the implementation of a reactive library in any language of choice.
+
 \end{itemize}
 
 \section*{Related Work}
@@ -73,5 +78,3 @@ Discuss stuff that I read in order to do this work, see repo. Most probably move
 In the exposition of our work we will make use of Haskell as the reference programming language. This decision is motivated by the language's strong connection with mathematics and category theory, as well as it's clean syntax. These features will make the code both easy to read and explicit in the side effects that come into play in the various definitions. A minimal knowledge of Haskell's syntax - type declaration, lambda abstraction and IO monad - is assumed to be known by the reader in the exposition of this report. 
 
 All the code presented in this report, a minimal complete theoretical implementation and a reference implementation of a reactive library can be found at the associated code repository on Github - \url{https://github.com/Widar91/Thesis}\todo{Fix repo organization}. 
-
-\todo[inline]{Fix Biblio}

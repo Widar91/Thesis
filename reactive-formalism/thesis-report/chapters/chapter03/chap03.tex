@@ -57,9 +57,6 @@ The next assumption involves premature stream cancellation via \code{Subscriptio
 \subsection{Resource Cleanup After Termination}
 As we mentioned in assumption \ref{ass-grammar}, the guarantee that no events will occur after the first termination message makes it possible to determine when resource cleanup operations are safe to perform. We will now make one step further and assume that resources \textit{will} be cleaned up immediately after termination. This will make sure that any related side-effect will occur in a predictable manner.
 
-\subsection{A note on the Reactive Contract}
-\todo[inline]{does the reactive contract even make sense? for example, why do we stop on onError? there could be a version of RX which doesn't. Would that make sense? Not sure whether to include this section or not yet.}
-
 \section{Concurrency with Schedulers}
 \label{schedulers}
 
