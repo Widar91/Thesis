@@ -1,21 +1,45 @@
 \let\textcircled=\pgftextcircled
-\chapter*{Conclusion}
+\chapter*{Conclusions}
+\addcontentsline{toc}{chapter}{Conclusions}
 \label{chap:discussion}
-\addcontentsline{toc}{chapter}{Conclusion}
+
 
 \epigraph{\hspace{4ex}\textit{''... and the mystery clears gradually away as each new discovery furnishes a step which leads on to the complete truth.''}}{--- Sir Arthur Conan Doyle,\\ \textit{Sherlock Holmes - The Adventure of the Engineer's Thumb}}
 
 The main research goal of this work was to analyze and formalize what is commonly referred to as the reactive programming paradigm by means of a theoretical and mathematical approach. 
 
-Starting from the intuition that the definitions and properties of interactive and reactive programs are the opposite of one another, we used the categorical concept of duality, as well as other useful constructs borrowed from mathematics, in order to simplify the definition of \code{Iterable} to its essential type and use this to derive the \code{Observable} type, representing the essence of reactive programs. We later showed how the \code{Observable} type corresponds to that of the continuation monad where side effects of its inner workings are made explicit in the type itself.
+We broke down our approach into three research questions, which were answered throughout the discussion presented in this report.
 
-The second part of this research focused on building a bridge between theory and practice, starting from the derived theoretical definition of \code{Observable} and building a reference implementation of a reactive library around it. In this section of the work, we augment the formal definition of \code{Observable} with features - subscriptions, schedulers, operators - that would make the type both useful and usable in a production environment, effectively resulting in a reactive library. We try to analyze each of the newly introduced features under both a practical - implementation details and challenges - and theoretical - meaning and impact of the previously derived formal types - point of view, with the purpose of stimulating awareness towards the problem rather than being prescriptive and forcing a specific solution upon the reader.
 
-Ultimately, this research contributes to the field of reactive programming by providing a formal derivation and analysis of the reactive types, a theory-biased implementation of these formal concepts and a production ready reactive library meant as a reference for software engineers interested in the field.
+\begin{itemize}
+\item \textbf{Which class of problems does reactive programming solve? How does this relate to the real world libraries that claim to be reactive?}
+
+Starting from Berry's definition of reactive programs\cite{berry1991reactive}, we identified the class of problems reactive programming sets out to solve as those dealing with asynchronous, event based data sources. After showing how such problems require a push based model of computation in order to be solved, we analyzed the most famous libraries and APIs that claim to embody the reactive philosophy and showed, how more often than not, this claim is not true from a theoretical perspective. 
+
+\item \textbf{How can we use existing mathematical and computer science theory in order to formally derive a definition for reactive programming?}
+
+Starting from the intuition that the definitions and properties of interactive and reactive programs are the opposite of one another, we used the categorical concept of duality, as well as other useful constructs borrowed from mathematics - see Appendix \ref{app:a} -, in order to simplify the definition of \code{Iterable} to its essential type and use this to formally derive the \code{Observable} type, thus proving our intuition correct.
+We later proved the connection between the previously mentioned definition of reactive programming and the \code{Observable} by showing its correspondence with the definition of a special kind of a Continuation Monad, where the result type is \code{IO ()} and the side effects of its inner workings are made explicit in the type itself.
+
+\item \textbf{How can we bridge from the derived theoretical foundations of reactive programming to a concrete API that, whilst maintaining its mathematical roots, is fit for use in a production environment?}
+
+The last part of this research focused on building a reference implementation of a reactive library starting from the derived theoretical definition of \code{Observable}. In this section of the work, we augmented the \code{Observable} with features - subscriptions, schedulers, operators - that would make the type both useful and usable in a production environment, effectively resulting in a reactive library. We analyze each of the proposed additional features under both a theoretical - their meaning and impact on the previously derived formal types - and practical - implementation details and related challenges - point of view, with the purpose of stimulating awareness and discussion w.r.t. these features and their related challenges, rather than being prescriptive and forcing a specific solution upon the reader.
+
+\end{itemize}
+
+To conclude, this research contributes to the field of reactive programming by providing a formal derivation and analysis of the reactive types, a theory-biased implementation of these formal concepts and a production ready reactive library meant as a reference for software engineers interested in implementing a version of the library in their language of choice.
 
 \section*{Limitations \& Future Work}
-\label{future-work}
 \addcontentsline{toc}{section}{Limitations \& Future Work}
+\label{future-work}
 
-- limitations: nobody has done it before, which meant huge literature study in different, but similar fields that might give a hint on how to undertake the challenge.
-- future work: formalize operators with event calculus, find a theory for schedulers
+
+The work presented in this report does not come without limitations. The main one can be pinpointed to the development of our reference implementation. If the first section of our research is made precise by the use of mathematics and category theory, the bridging between theory and practice, realized by augmenting the reactive interfaces with additional features, cannot be justified in a scientific fashion. Whether a certain feature might or might not result useful for a software engineer in a production environment is not easily quantifiable. In this work, we relied on both common sense and the fact that the introduced features can already be found in wildly used reactive libraries such as the Reactive Extensions family. From this point of view, we have contributed to better understanding these features by providing a theoretical analysis, as well as a discussion on the practical advantages and challenges that would follow from their inclusion in a production reactive API. 
+
+Another limitation is represented by the Reactive Contract. Once again, its introduction is justified by wildly spread acceptance and commons sense, yet these reasons are not strong enough to preclude from the formulation of a different contract that would eventually result in an API with different semantics from the one developed in this report. 
+
+These limitations sparkle motivation for further research: with regards to the introduction of new features such as subscriptions, schedulers and operators, additional work could focus on better defining such concepts from a theoretical perspective, finding an abstract model to represent their behavior and semantics, which could more easily act as a reference for implementors. To this end, Event Calculus\cite{shanahan1999event} seems to be a promising mathematical language to reason about events and their effects, making it interesting for modeling the behavior of operators.
+
+Moreover, further research could investigate a different set of rules that would constitute the Reactive Contract, analyzing the ways these could affect the resulting reactive library and the use cases where one set could be more useful than another. As an example, we could imagine a set of rules which lifts the constraint that a stream must terminate after an error is produced. This contract could be useful for certain types of applications where errors in the processing of a single element are tolerated.
+
+We hope, with this work, to have sparkled interest towards the field of reactive programming, removing any doubt as to what its definition and properties are, and giving it its right place within the computer science's scientific community.

@@ -1,7 +1,7 @@
 \let\textcircled=\pgftextcircled
 \chapter*[Introduction]{Introduction}
-\label{chap:intro}
 \addcontentsline{toc}{chapter}{Introduction}
+\label{chap:intro}
 
 \epigraph{\hspace{4ex}\textit{"Lasciate ogne speranza, voi ch'intrate."}}{--- Dante Alighieri,\\ \textit{Divina Commedia}}
 
@@ -48,19 +48,30 @@ With the help of this report and the associated code repository, any software en
 The work presented in this report will focus on answering the following research questions:
 
 \begin{itemize}
-\item \textbf{What does it mean to be reactive? Which class of problems does it solve? How does this relate to the real world libraries that claim to be reactive?}
+\item \textbf{Which class of problems does reactive programming solve? How does this relate to the real world libraries that claim to be reactive?}
 
 Before any attempts at a formalization can be carried out, we need to clearly identify the class of problems the reactive paradigm is fit for solving, understanding what are the issues and concerns such problems present, thus setting the basis for a formalization to be defined. Additionally, we are going to analyze the current libraries and APIs that claim to be reactive, and see how they relate to our definition.
 
-\item \textbf{Can we use existing mathematical and computer science theory in order to formally derive a definition for reactive programming?}
+\item \textbf{How can we use existing mathematical and computer science theory in order to formally derive a definition for reactive programming?}
 
-Once we have a clear definition of the meaning of reactive and the class of problems it solves, we are going to look at existing theories in mathematics and computer science that would allow us to derive a set of types/interfaces representing the essence of reactive programming. In order to make our work sound, we will then need to prove the connection between the derived types and the definition resulting from the first research question.
+Once we have a clear definition of the meaning of reactive programming and the class of problems it solves, we are going to look at existing theories in mathematics and computer science that would allow us to derive a set of types/interfaces representing the essence of reactive programming. In order to make our work sound, we will then need to prove the connection between the derived types and the definition resulting from the first research question.
+
+\item \textbf{How can we bridge from the derived theoretical foundations of reactive programming to a concrete API that, whilst maintaining its mathematical roots, is fit for use in a production environment?}
+
+Although appealing under multiple aspects, a set of interfaces is not concrete enough to have an impact in our daily lives as software engineers. The last step of our work will focus on building a reactive API directly from the theory discussed in the previous point, providing a reference point and set of good practices applicable to the implementation of a reactive library in any language of choice.
+
 \end{itemize}
 
 \section*{Related Work}
 \addcontentsline{toc}{section}{Related Work}
 
-Discuss stuff that I read in order to do this work, see repo. Most probably move this section to Introduction or separate chapter.
+This work mainly builds on top of the 2010 paper \textit{Subject/Observer is Dual to Iterator} by Erik Meijer\cite{meijer2010observable}. In his work, the author introduces the \code{Observable} interfaces and informally provides its derivation starting from the \code{IEnumerable} interface in \code{C\#}. Together with a small number of related recorded talks and presentations\cite{E2E-Rx,meijer2014reactive,meijer2014-Duality-And-The-End-Of-Reactive}, this paper is the only source that discusses the theoretical aspects tight to reactive programming. 
+
+Nevertheless, much related work and theories was found on the formalization of the semantics of a program, language or API that has aided in the development of the research presented in this thesis. The most popular approaches to formalizing computations are known as Operational and Denotational Semantics and were introduced by Christopher Strachey and Dana Scott in the late 1960s\cite{scott1970outline}. Operational semantics describes a program in terms of the computational steps needed in order to interpret the program, whereas a denotational semantics attaches a mathematical meaning to the components of the programs and abstracts away from any operational concern. Although mainly used to formalize the semantics of programming languages, these techniques have been proposed and employed in the development of programming libraries as well; Conal Elliott, promotor of the denotational design approach\cite{elliottdenotational}, makes use of denotational semantics in order to provide a precise definition of theory of Functional Reactive Programming\cite{elliott1997functional}. 
+
+Process Calculus and in particular ACP\cite{bergstra1984process} - Algebra of Communicating Processes - is an algebraic approach to describing concurrent systems in term of communicating processes and their composition. This theory contains interesting aspects and properties that helped reasoning about the formalization of operators in this work. Inspiration for this task was also found in Kowalski and Sergot's Event Calculus\cite{shanahan1999event}, different from ACP in that the focus shifts from reasoning in terms of processes to reasoning in terms of events.
+
+Alongside the mentioned theories and calculi, much inspiration for the research and methodology presented in this report was gained though work focused on the formal description of interactive libraries and constructs. To this end, it is worth mentioning Gibbons and Oliveira's formalization of the essence of the Iterator pattern\cite{gibbons2009essence}, Kiselyov's work on Iteratees\cite{kiselyov2012iteratees}, Gonzale's work on the Pipes\cite{gonzales2012pipes} library for the Haskell programming language, with a particular focus on a theory driven development, Capriotti's attempt to a Continuation monad based implementation of FRP\cite{capriotti2012contfrp}, as well as the great amount of material on functional programming, Continuation monad, Free monad, monad transformers and so on found on HaskellWiki\cite{haskellwiki}. 
 
 \section*{Overview}
 \addcontentsline{toc}{section}{Overview}
@@ -70,8 +81,6 @@ Discuss stuff that I read in order to do this work, see repo. Most probably move
 \section*{Notation \& Conventions}
 \addcontentsline{toc}{section}{Notation \& Conventions}
 
-In the exposition of our work we will make use of Haskell as the reference programming language. This decision is motivated by the language's strong connection with mathematics and category theory, as well as it's clean syntax. These features will make the code both easy to read and explicit in the side effects that come into play in the various definitions. A minimal knowledge of Haskell's syntax - type declaration, lambda abstraction and IO monad - is assumed to be known by the reader in the exposition of this report. 
+In the exposition of our work we will make use of Haskell as the reference programming language. This decision is motivated by the language's strong connection with mathematics and category theory, as well as it's clean syntax. These features will make the code both easy to read and explicit in the side effects that come into play in the various definitions. A minimal knowledge of Haskell's syntax - type declaration, lambda abstraction and \code{IO} monad - is assumed to be known by the reader in the exposition of this report. 
 
 All the code presented in this report, a minimal complete theoretical implementation and a reference implementation of a reactive library can be found at the associated code repository on Github - \url{https://github.com/Widar91/Thesis}\todo{Fix repo organization}. 
-
-\todo[inline]{Fix Biblio}

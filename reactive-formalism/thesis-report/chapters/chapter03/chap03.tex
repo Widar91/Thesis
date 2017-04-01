@@ -25,7 +25,7 @@ data Observer a = Observer
 \end{minted}
 
 
-It is worth noting that even though the \code{Observable}'s theoretical foundations lie in the realm of functional programming, the road to making it usable is full of obstacles that are often better tackled using imperative programming features, such as state. As much as I personally prefer a functional and pure approach to programming, I will favor, in the rest of the discussion, the solution that most clearly and easily solves the problem, be that functional or imperative.
+It is worth noting that even though the \code{Observable}'s theoretical foundations lie in the realm of functional programming, the road to making it usable is full of obstacles that are often better tackled using imperative programming features, such as state. As much as I personally prefer a functional and pure approach to programming, I will favor, in the rest of the discussion, the solution that most clearly and easily solves the problem, be that functional or imperative. As mentioned previously, Appendix \ref{app:b} contains a reference implementation of a Reactive Library which implements the features presented in this chapter utilizing existing constructs from functional programming.
 
 \section{The Reactive Contract}
 \label{sec:contract}
@@ -56,9 +56,6 @@ The next assumption involves premature stream cancellation via \code{Subscriptio
 
 \subsection{Resource Cleanup After Termination}
 As we mentioned in assumption \ref{ass-grammar}, the guarantee that no events will occur after the first termination message makes it possible to determine when resource cleanup operations are safe to perform. We will now make one step further and assume that resources \textit{will} be cleaned up immediately after termination. This will make sure that any related side-effect will occur in a predictable manner.
-
-\subsection{A note on the Reactive Contract}
-\todo[inline]{does the reactive contract even make sense? for example, why do we stop on onError? there could be a version of RX which doesn't. Would that make sense? Not sure whether to include this section or not yet.}
 
 \section{Concurrency with Schedulers}
 \label{schedulers}
