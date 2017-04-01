@@ -1,7 +1,8 @@
 \let\textcircled=\pgftextcircled
 \chapter*{Conclusions}
-\label{chap:discussion}
 \addcontentsline{toc}{chapter}{Conclusions}
+\label{chap:discussion}
+
 
 \epigraph{\hspace{4ex}\textit{''... and the mystery clears gradually away as each new discovery furnishes a step which leads on to the complete truth.''}}{--- Sir Arthur Conan Doyle,\\ \textit{Sherlock Holmes - The Adventure of the Engineer's Thumb}}
 
@@ -29,8 +30,9 @@ The last part of this research focused on building a reference implementation of
 To conclude, this research contributes to the field of reactive programming by providing a formal derivation and analysis of the reactive types, a theory-biased implementation of these formal concepts and a production ready reactive library meant as a reference for software engineers interested in implementing a version of the library in their language of choice.
 
 \section*{Limitations \& Future Work}
-\label{future-work}
 \addcontentsline{toc}{section}{Limitations \& Future Work}
+\label{future-work}
+
 
 The work presented in this report does not come without limitations. The main one can be pinpointed to the development of our reference implementation. If the first section of our research is made precise by the use of mathematics and category theory, the bridging between theory and practice, realized by augmenting the reactive interfaces with additional features, cannot be justified in a scientific fashion. Whether a certain feature might or might not result useful for a software engineer in a production environment is not easily quantifiable. In this work, we relied on both common sense and the fact that the introduced features can already be found in wildly used reactive libraries such as the Reactive Extensions family. From this point of view, we have contributed to better understanding these features by providing a theoretical analysis, as well as a discussion on the practical advantages and challenges that would follow from their inclusion in a production reactive API. 
 
