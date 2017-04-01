@@ -1,10 +1,8 @@
-# Thesis
+# Related Work and Material
 
 ## Introduction to Theoretical Computer Science
 
 From [University of Edinburgh Course - Introduction to Theoretical Computer Science](http://www.inf.ed.ac.uk/teaching/courses/itcs/lectures.html). Slides [here](http://www.inf.ed.ac.uk/teaching/courses/itcs/itcs-slides.pdf)
-
-### Computability Theory & Complexity
 
 Author | Reference
 --- | --- 
@@ -12,7 +10,7 @@ Sipser | [Introduction to the Theory of Computation](http://neerci.ist.utl.pt/ne
 Turing Paper | [On computable numbers with an application to the entscheidungsproblem](https://people.cs.umass.edu/~immerman/cs601/TuringPaper1936.pdf)
 Turing Paper Summary | http://swizec.com/blog/week-1-turings-on-computable-numbers/swizec/6375
 
-### Lambda Calculus
+## Lambda Calculus
 
 Author | Reference
 --- | --- 
