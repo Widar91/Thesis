@@ -7,7 +7,7 @@
 
 So far we focused our analysis on the essence of the \code{Observable} interface, setting aside the many operational concerns that would come up when trying to implement these concepts into a usable, commercial API. In this chapter we are going to build the bridge between our theoretical definition of \code{Observable} and a concrete and usable implementation of a reactive library, to which we will refer to as Rx.
 
-The goal of this chapter is to provide the reader with a reference implementation of a reactive library as well as to highlight the challenges and issues that emerge when trying to build the bridge between theory and practice. The implementation choices presented below are in no way prescriptive, instead, they aim to describe the problem in the most clear way, in order to stimulate awareness rather than blindly guide the reader to a solution. \todo{Say something about why I chose to go with the RxJava style of implementation?}
+The goal of this chapter is to provide the reader with a reference implementation of a reactive library as well as to highlight the challenges and issues that emerge when trying to build the bridge between theory and practice. The implementation choices presented below are in no way prescriptive, instead, they aim to describe the problem in the most clear way, in order to stimulate awareness rather than blindly guide the reader to a solution.
 
 In the remainder of the discussion, we are going to introduce the \textit{Reactive Contract}, a set of assumptions on the reactive types our library is going to build upon, \textit{Schedulers}, which will allow us to bring concurrency into our reactive equation, \textit{Subscriptions}, used to implement a mechanism for premature stream cancellation and finally, \textit{Operators}, the means with which we will make our reactive streams composable.
 
@@ -104,7 +104,6 @@ The problem is gracefully solved with the introduction of \code{Scheduler}s, whi
 
 With schedulers, we are now able to handle observable streams from different execution contexts. The next step in making Rx ready for a production environment is to add a mechanism that will allow us to stop a stream from anywhere in our program, whenever we don't require it's data anymore - i.e. a mechanism that will allow the user to communicate to the \code{Observable} that one of it's \code{Observer}s is no longer interested in receiving its events. 
 
-\todo[inline]{Is the following clear?}
 We discussed in the previous section how schedulers effectively boost the expressive power of our reactive expressions by introducing concurrency and interleaving among events originating from different streams. Introducing a cancellation mechanism, on the other hand, is a purely practical concern: although very useful from a practical perspective, especially in the context of resource management, it doesn't impact expressive power from a \textit{reactive} point of view.
 
 The means by which we are going to introduce a cancellation mechanism inside our reactive equation is though the \code{Subscription} datatype. From a functionality point of view, what we are aiming for is for the \code{\_subscribe} function to hand back a \code{Subscription} whenever invoked; users will later be able to use this \code{Subscription} in order to prematurely cease the observation of a stream. This design is closely related to Dispose pattern utilized in the .NET framework\cite{cwalina2008framework}.
@@ -243,7 +242,7 @@ As an example, we re-propose here the implementation of the Functor instance for
 
 \haskellcode[firstline=26,lastline=31]{src/subsciption.hs}
 
-As we discussed in section \ref{sec:applyingduality}, the \code{Observable} type, at its essence, is an instance of Applicative Functor and Monad from a cathegory theory perspective. This observation motivates our next effort of trying and defining such instances on the latest version of our interface. We will not bother anymore with proving the associated laws, as it would be a very difficult task, given the complicated nature of the implementation of such functions which now needs to handle subscriptions as well as synchronized state due to schedulers.\todo{Say more about the fact that they dont respect the laws, but just like the try, that is not a monad, they are ok? Meaning try doesnt respect the laws but nobody really cares, it does what it has to do and from an interface perspective it acts as if it was a monad.}
+As we discussed in section \ref{sec:applyingduality}, the \code{Observable} type, at its essence, is an instance of Applicative Functor and Monad from a cathegory theory perspective. This observation motivates our next effort of trying and defining such instances on the latest version of our interface. We will not bother anymore with proving the associated laws, as it would be a very difficult task, given the complicated nature of the implementation of such functions which now needs to handle subscriptions as well as synchronized state due to schedulers.
 
 \haskellcode[firstline=139,lastline=189]{src/subsciption.hs}
 
@@ -258,7 +257,7 @@ Note how this implementation if \code{(>>=)} shows the need for the introduction
 \subsection{The Essential Operators}
 Operators can theoretically be infinite in number, as infinite are the transformations that can be done to elements of an observable stream. Practice shows, though, that a relatively small subset of operators and the composition of these, suffices to express the majority of the use cases encountered by users. Leveraging the power of composability of operators is advantageous towards the design of a simple yet powerful API.
 
-Operators can be grouped into categories by looking at their characteristics; it is not the purpose of this work to list every possible operator and its semantics, yet, for the sake of completeness, table \ref{ess-oper} presents the most important categories\footnote{An implementation of these operators can be found at the repository associated with this work.} and the associated operators:\todo{Put operator description in the table?}
+Operators can be grouped into categories by looking at their characteristics; it is not the purpose of this work to list every possible operator and its semantics, yet, for the sake of completeness, table \ref{ess-oper} presents the most important categories\footnote{An implementation of these operators can be found at the repository associated with this work.} and the associated operators:
 
 \begin{table}[]
 \thisfloatpagestyle{empty}
