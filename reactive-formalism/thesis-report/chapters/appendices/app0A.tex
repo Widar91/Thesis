@@ -9,12 +9,82 @@
 
 \initial{B}egins an appendix\\
 
-\section{Categorical Duality}
-\section{Continuations}
+\section{Duality - Category Theory}
+
+Duality is an element of paramount importance in research we presented. Up until this moment we have only dealt with an informal definition of duality but its roots go very deep in the field of mathematics and category theory in particular.
+
+Given the formal definition of a category, composed of objects $ A, B, C, ... $ and arrows $ f, g, h, ... $ and the operations $ dom(f), cod(f), id(A), g \circ f $, and given any sentence $ \Sigma $ we can create its dual $ \Sigma^{op} $ by interchanging dom with cod and the order of composition - i.e. $ g \circ f -> f \circ g $. It is clear how $ \Sigma^{op} $ is a well formed sentence in the language of category theory $ CT $.
+
+The principle of - formal - duality then tells us that for any sentence $ \Sigma $ in the language of category theory, if $ \Sigma $ follows from the axioms defined for categories, then so does $ \Sigma^{op}$.
+
+\[ CT \vdash \Sigma \implies CT \vdash \Sigma^{op} \]
+
+From a visual perspective, this definition boils down to reversing the order of composition if arrows. 
+
+\begin{center}
+\begin{minipage}{.2\textwidth}
+\begin{tikzpicture}
+\large
+  \matrix (m) [matrix of math nodes,row sep=3em,column sep=4em,minimum width=2em]
+  { A & B \\
+       & C \\};
+  \path[-stealth]
+    (m-1-1) edge node [above] {$f$} (m-1-2)
+                 edge node [below] {$g \circ f$} (m-2-2)
+    (m-1-2) edge node [right] {$g$} (m-2-2);
+\end{tikzpicture}
+\end{minipage}
+\begin{minipage}{.2\textwidth}
+\begin{tikzpicture}
+\large
+  \matrix (m) [matrix of math nodes,row sep=3em,column sep=4em,minimum width=2em]
+  { A & B \\
+       & C \\};
+  \path[-stealth]
+    (m-1-2) edge node [above] {$f$} (m-1-1)
+    (m-2-2) edge node [below] {$f \circ g$} (m-1-1)
+                 edge node [right] {$g$} (m-1-2);
+\end{tikzpicture}
+\end{minipage}
+\end{center}
+
 \section{(Co)Products}
-\section{(Un)Currying}
-\section{(Covariance \& Contravariance}
+
 \section{Functors}
+
+In category theory a functor is a mapping from one category to another or a homomorphism of categories where certain laws hold. 
+
+Functors span thorough a large number of categories and are more and more common in modern programming languages. In Haskell the Functor class and its laws are defined as follows.
+
+\hminted
+class Functor f where
+    fmap :: (a -> b) -> f a -> f b
+  
+fmap id      = id
+fmap (p . q) = (fmap p) . (fmap q)
+\end{minted}
+
+\section{Covariance \& Contravariance}
+
+\section{Continuations}
+
+\section{Curry \& Uncurry}
+
+Currying is the technique of transforming a function taking multiple arguments as input in one taking only the first argument and returning a function that takes the remainder of the arguments and returns the result of the initial function. Uncurrying is nothing more than the inverse process of currying.
+
+\hminted
+curry   :: ((a, b) -> c) -> a -> b -> c
+uncurry :: (a -> b -> c) -> (a, b) -> c
+
+f :: a -> b -> c
+g :: (a -> b) -> c
+
+f = curry g
+g = uncurry f
+
+f x y = g (x, y)
+\end{minted}
+
 
 
 
