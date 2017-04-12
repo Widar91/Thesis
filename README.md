@@ -60,4 +60,5 @@ Harvard University | [Harvard - CS 152: Programming Languages](http://www.seas.h
 * [Continuation-based relative-time FRP](http://www.paolocapriotti.com/blog/2012/06/04/continuation-based-relative-time-frp/)
 * [Event Calculus Explained](https://www.doc.ic.ac.uk/~mpsha/ECExplained.pdf)
 * [Reactive Programming in Standard ML](https://arxiv.org/pdf/cs/0405080.pdf)
+* [Category Theory - Steve Awodey](http://angg.twu.net/MINICATS/awodey__category_theory.pdf)
 
