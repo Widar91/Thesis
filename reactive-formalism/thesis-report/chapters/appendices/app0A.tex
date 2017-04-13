@@ -1,9 +1,3 @@
-%
-% file: localoperator.tex
-% author: Victor Brena
-% description: Briefly describes properties of the local operator.
-%
-
 \chapter{Appendix A}
 \label{app:a}
 
@@ -13,7 +7,11 @@
 
 Duality is an element of paramount importance in research we presented. Up until this moment we have only dealt with an informal definition of duality but its roots go very deep in the field of mathematics and category theory in particular.
 
-Given the formal definition of a category, composed of objects $ A, B, C, ... $ and arrows $ f, g, h, ... $ and the operations $ dom(f), cod(f), id(A), g \circ f $, and given any sentence $ \Sigma $ we can create its dual $ \Sigma^{op} $ by interchanging dom with cod and the order of composition - i.e. $ g \circ f -> f \circ g $. It is clear how $ \Sigma^{op} $ is a well formed sentence in the language of category theory $ CT $.
+Given the formal definition of a category, composed of objects $$A,\; B,\; C,\; ...$$ and arrows $$f,\; g,\; h,\; ... $$ and operations $$ dom(f) \quad cod(f) \quad id(A) \quad g \circ f $$ 
+
+Given any sentence $ \Sigma $, we can create its dual $ \Sigma^{op} $ by interchanging $$dom \to cod$$ and the order of composition $$ g \circ f \to f \circ g $$ 
+
+It is clear how $ \Sigma^{op} $ is a well formed sentence in the language of category theory $ CT $.
 
 The principle of - formal - duality then tells us that for any sentence $ \Sigma $ in the language of category theory, if $ \Sigma $ follows from the axioms defined for categories, then so does $ \Sigma^{op}$.
 
@@ -22,7 +20,7 @@ The principle of - formal - duality then tells us that for any sentence $ \Sigma
 From a visual perspective, this definition boils down to reversing the order of composition if arrows. 
 
 \begin{center}
-\begin{minipage}{.2\textwidth}
+\begin{minipage}{.3\textwidth}
 \begin{tikzpicture}
 \large
   \matrix (m) [matrix of math nodes,row sep=3em,column sep=4em,minimum width=2em]
@@ -30,11 +28,11 @@ From a visual perspective, this definition boils down to reversing the order of 
        & C \\};
   \path[-stealth]
     (m-1-1) edge node [above] {$f$} (m-1-2)
-                 edge node [below] {$g \circ f$} (m-2-2)
+                 edge node [below] {$g \circ f\qquad$} (m-2-2)
     (m-1-2) edge node [right] {$g$} (m-2-2);
 \end{tikzpicture}
 \end{minipage}
-\begin{minipage}{.2\textwidth}
+\begin{minipage}{.3\textwidth}
 \begin{tikzpicture}
 \large
   \matrix (m) [matrix of math nodes,row sep=3em,column sep=4em,minimum width=2em]
@@ -42,13 +40,15 @@ From a visual perspective, this definition boils down to reversing the order of 
        & C \\};
   \path[-stealth]
     (m-1-2) edge node [above] {$f$} (m-1-1)
-    (m-2-2) edge node [below] {$f \circ g$} (m-1-1)
+    (m-2-2) edge node [below] {$f \circ g\qquad$} (m-1-1)
                  edge node [right] {$g$} (m-1-2);
 \end{tikzpicture}
 \end{minipage}
 \end{center}
 
-\section{(Co)Products}
+\section{Products \& Coproducts}
+
+
 
 \section{Functors}
 
@@ -70,19 +70,20 @@ fmap (p . q) = (fmap p) . (fmap q)
 
 \section{Curry \& Uncurry}
 
-Currying is the technique of transforming a function taking multiple arguments as input in one taking only the first argument and returning a function that takes the remainder of the arguments and returns the result of the initial function. Uncurrying is nothing more than the inverse process of currying.
+Currying is the technique of transforming a function taking multiple arguments as input in one taking only the first argument and returning a function that takes the remainder of the arguments and returns the result of the initial function. Uncurrying is the opposite of currying, taking a curried function into one that accepts multiple arguments as input.
 
 \hminted
-curry   :: ((a, b) -> c) -> a -> b -> c
+curry   :: ((a, b) -> c) -> (a -> b -> c)
 uncurry :: (a -> b -> c) -> (a, b) -> c
 
 f :: a -> b -> c
-g :: (a -> b) -> c
+g :: (a, b) -> c
 
 f = curry g
 g = uncurry f
 
-f x y = g (x, y)
+-- f x y = g (x, y)
+-- curry . uncurry = id
 \end{minted}
 
 
