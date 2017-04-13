@@ -1,6 +1,8 @@
 \chapter{Appendix A}
 \label{app:a}
 
+In the following sections we are going to dive deeper in the theoretical notions that have powered the derivation in this thesis. A special mention of Steve Awodey's book \textit{"Category Theory"}\cite{awodey2010category} and the HaskellWiki\cite{haskellwiki} for providing much inspiration in the exposition of these topics is in order.
+
 \section{Duality - Category Theory}
 
 Duality is an element of paramount importance in research we presented. Up until this moment we have only dealt with an informal definition of duality but its roots go very deep in the field of mathematics and category theory in particular.
@@ -119,24 +121,6 @@ where $$ [f, g](x,\delta) = \begin{cases} f(x), & \delta = 1 \\ g(x), & \delta =
 
 Withing the context of our research and the Haskell programming language, tuples represent products and the Either monad represents coproducts.
 
-\section{Functors}
-
-In category theory a functor is a mapping from one category to another or a homomorphism of categories where certain laws hold. 
-
-Functors span thorough a large number of categories and are more and more common in modern programming languages. In Haskell the Functor class and its laws are defined as follows.
-
-\hminted
-class Functor f where
-    fmap :: (a -> b) -> f a -> f b
-  
-fmap id      = id
-fmap (p . q) = (fmap p) . (fmap q)
-\end{minted}
-
-\section{Covariance \& Contravariance}
-
-\section{Continuations}
-
 \section{Curry \& Uncurry}
 
 Currying is the technique of transforming a function taking multiple arguments as input in one taking only the first argument and returning a function that takes the remainder of the arguments and returns the result of the initial function. Uncurrying is the opposite of currying, taking a curried function into one that accepts multiple arguments as input.
@@ -155,11 +139,30 @@ g = uncurry f
 -- curry . uncurry = id
 \end{minted}
 
+\section{Functors}
 
+In category theory a functor is a mapping from one category to another or a homomorphism of categories where certain laws hold. 
 
+Functors span a large number of categories and are more and more common in modern programming languages. In Haskell the Functor class and its laws are defined as follows.
+\hminted
+class Functor f where
+    fmap :: (a -> b) -> f a -> f b
+  
+-- fmap id      = id
+-- fmap (p . q) = (fmap p) . (fmap q)
+\end{minted}
 
+\section{Continuation Passing Style}
 
+\textit{Continuation Passing Style (CPS)}, is a style of programming where functions do not return their result type directly but forward it to an extra function called \textit{continuation}, which will specify what will happen next in the control flow of the program. 
 
+In CPS, functions take the role of suspended computations and effectively do nothing until a continuation is passed in as an argument.
+
+The main advantage of this programming style is the power of controlling and altering the control flow of a program to such a great extent that it is possible, with continuations, to implement features such as exceptions and concurrency.
+
+The Haskell programming language exposes continuations through the Continuation Monad, also known as the mother of all monads, as its definition makes it possible to implement any other monad.
+
+\haskellcode{src/continuation_monad.hs}
 
 
 

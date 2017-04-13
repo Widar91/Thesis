@@ -5,7 +5,7 @@
 
 As we saw in Chapter \ref{chap:reactiveprogramming}, the \code{Iterable} interface embodies the idea of a pull-based model of computation and is the commonly adopted solution to dealing with synchronous computations resulting in multiple values. In this chapter we are going to formalize the intuition that there exists a duality relation between interactive and reactive programs\citep{meijer2010observable}, as well as between pull and push models of computations, by deriving the \code{Observable} interface - introduced in Section \ref{subsec:rx} - starting from its dual counterpart, the \code{Iterable}.
 
-The derivation that follows will require the use of a number mathematical concepts such as \textit{categorical duality}, \textit{continuations}, \textit{(co)products}, \textit{(un)currying}, \textit{covariance}, \textit{contravariance} and \textit{functors}. We suggest the reader to get familiar with these topics before diving into the derivation. An accessible introduction to each can be found in Appendix \ref{app:a}.
+The derivation that follows will require the use of a number mathematical concepts such as \textit{categorical duality}, \textit{(co)products}, \textit{(un)currying}, \textit{functors} and \textit{continuations}. We suggest the reader to get familiar with these topics before diving into the derivation. An accessible introduction to each can be found in Appendix \ref{app:a}.
 
 \section{Iterables}
 \label{sec:iterables}
@@ -67,7 +67,7 @@ The intuition can be easily understood when we think of an iterator as a drink v
                        VendingM Coke <: VendingM Drink
 \end{minted}
 
-If coke is a subtype of drink, then whenever I am asked for a drink vending machine, I can hand out a coke vending machine without incurring in any troubles with the person who asked, as that machine will correctly provide drinks - even though they will always be coke - whenever prompted for one.
+If coke is a subtype - denoted by the operator \code{<:}- of drink, then whenever I am asked for a drink vending machine, I can hand out a coke vending machine without incurring in any troubles with the person who asked, as that machine will correctly provide drinks - even though they will always be coke - whenever prompted for one.
 
 With \code{Iterator} being a getter itself, it should be clear how covariance plays the same role as with \code{Iterable}.
 
@@ -95,7 +95,7 @@ In the previous section we have discussed many properties associated with \code{
 First, moving from the observation that an \code{Iterable} is a getter of a getter, we can observe that the \code{Observable} plays exactly the opposite role, that is, a setter of a setter. The type \code{Observer :: a -> IO ()} represents, in fact, the essence of a setter function, whereas the \code{Observable} consists in nothing more than the simple task of applying the observer function to itself, producing a setter of setters. 
 
 While the discussion about \code{Iterable}'s covariance was quite intuitive, things get a little bit more complicated when analyzing \code{Observable}s. Referring back to our previous example involving cokes and drinks, we can now think of the \code{Observer} as a a recycling machine:
-
+\\\\\\
 \hminted
                                 Coke <: Drink
                     -----------------------------------
