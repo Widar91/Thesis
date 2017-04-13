@@ -1,8 +1,6 @@
 \chapter{Appendix A}
 \label{app:a}
 
-\initial{B}egins an appendix\\
-
 \section{Duality - Category Theory}
 
 Duality is an element of paramount importance in research we presented. Up until this moment we have only dealt with an informal definition of duality but its roots go very deep in the field of mathematics and category theory in particular.
@@ -13,11 +11,11 @@ Given any sentence $ \Sigma $, we can create its dual $ \Sigma^{op} $ by interch
 
 It is clear how $ \Sigma^{op} $ is a well formed sentence in the language of category theory $ CT $.
 
-The principle of - formal - duality then tells us that for any sentence $ \Sigma $ in the language of category theory, if $ \Sigma $ follows from the axioms defined for categories, then so does $ \Sigma^{op}$.
+The principle of - formal - duality then tells us that for any sentence $ \Sigma $ in the language of category theory, if $ \Sigma $ follows from the axioms defined for categories, then so does $ \Sigma^{op}$. 
 
-\[ CT \vdash \Sigma \implies CT \vdash \Sigma^{op} \]
+$$ CT \vdash \Sigma \implies CT \vdash \Sigma^{op} $$
 
-From a visual perspective, this definition boils down to reversing the order of composition if arrows. 
+From a visual perspective, this definition boils down to reversing the order of composition of the arrows. 
 
 \begin{center}
 \begin{minipage}{.3\textwidth}
@@ -48,7 +46,78 @@ From a visual perspective, this definition boils down to reversing the order of 
 
 \section{Products \& Coproducts}
 
+In category theory, the product of two objects in a category is the most general object which admits a morphism to each of the ones that compose it. The notion of product aims at capturing the essence of more specialized definitions found in various categories and areas of mathematics. The easiest way understand this construct is to start from the cartesian products in the category of sets.
 
+Given sets $A$ and $B$, let us define the cartesian product as the set $$A \times B\; =\; \{\; (a, b)\; |\; a \in A,\; b \in B\; \} $$ There are two coordinate projections
+\begin{center}
+\begin{tikzpicture}
+  \matrix (m) [matrix of math nodes,column sep=4em,minimum width=2em] { 
+	  A & {A \times B} & B \\
+	  & & \\
+  };
+  \path[-stealth]
+    (m-1-2) edge node [above] {$fst$} (m-1-1)
+                 edge node [above] {$snd$} (m-1-3);
+\end{tikzpicture}
+\end{center}
+where $$ fst\; (a, b) = a \qquad snd\; (a, b) = b $$ 
+
+It follows that given any element $ c \in A \times B $ $$ c\; =\; (\; fst\; (c),\; snd\; (c)\; )$$ 
+The following diagram captures the essence of cartesian products.
+
+\begin{center}
+\begin{tikzpicture}
+  \matrix (m) [matrix of math nodes,row sep=7em,column sep=6em,minimum width=2em] { 
+	 {} & 1 & {} \\
+	  A & {A \times B} & B \\
+  };
+  \path[-stealth]
+  	(m-1-2) edge node [left] {$a\quad$} (m-2-1)
+                 edge node [right] {$\quad b$} (m-2-3)
+                 edge node [right] {$(a, b)$} (m-2-2)
+    (m-2-2) edge node [below] {$fst$} (m-2-1)
+                 edge node [below] {$snd$} (m-2-3);
+\end{tikzpicture}
+\end{center}
+
+The definition of categorical products can be derived from generalizing the elements in the previous definition.
+
+Coproducts are the dual notion of categorical products, representing the least general object to which the objects in the family admit a morphism. Within the context of set theory, the represent the disjoint union of sets.
+
+Given sets $A$ and $B$, let us define their disjoint union as the set $$A + B\; =\; \{\; (a, 1)\; |\; a \in A\} \cup (b, 2)\; |\; b \in B\} $$ There are two injection functions
+\begin{center}
+\begin{tikzpicture}
+  \matrix (m) [matrix of math nodes,column sep=4em,minimum width=2em] { 
+	  A & {A + B} & B \\
+	  & & \\
+  };
+  \path[-stealth]
+    (m-1-1) edge node [above] {$left$} (m-1-2)
+    (m-1-3) edge node [above] {$right$} (m-1-2);
+\end{tikzpicture}
+\end{center}
+where $$ left\; (a) = (a,\; 1) \qquad right\; (b) = (b,\; 2) $$ 
+
+The essence is captured by the following diagram, where we have simply reversed the arrows.
+
+\begin{center}
+\begin{tikzpicture}
+  \matrix (m) [matrix of math nodes,row sep=7em,column sep=6em,minimum width=2em] { 
+	 {} & 1 & {} \\
+	  A & {A + B} & B \\
+  };
+  \path[-stealth]
+  (m-2-1) edge node [left] {$f\quad$} (m-1-2)
+  (m-2-3) edge node [right] {$\quad g$} (m-1-2)
+  (m-2-2) edge node [right] {$[f,g]$} (m-1-2)
+  (m-2-1) edge node [below] {$left$} (m-2-2)
+  (m-2-3) edge node [below] {$right$} (m-2-2);
+\end{tikzpicture}
+\end{center}
+
+where $$ [f, g](x,\delta) = \begin{cases} f(x), & \delta = 1 \\ g(x), & \delta = 2 \end{cases} $$
+
+Withing the context of our research and the Haskell programming language, tuples represent products and the Either monad represents coproducts.
 
 \section{Functors}
 
