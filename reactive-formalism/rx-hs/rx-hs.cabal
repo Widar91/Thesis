@@ -1,16 +1,16 @@
 name:                rx-hs
 version:             0.1.0.0
-synopsis:            Initial project template from stack
-description:         Please see README.md
-homepage:            https://github.com/githubuser/rx-hs#readme
+-- synopsis:
+-- description:
+homepage:            https://github.com/githubuser/helloworld#readme
 license:             BSD3
 license-file:        LICENSE
 author:              Author name here
 maintainer:          example@example.com
-copyright:           2016 Author name here
+copyright:           2017 Author name here
 category:            Web
 build-type:          Simple
--- extra-source-files:
+extra-source-files:  README.md
 cabal-version:       >=1.10
 
 library
