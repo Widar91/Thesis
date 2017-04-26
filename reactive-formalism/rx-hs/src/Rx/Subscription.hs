@@ -6,45 +6,39 @@ import Control.Concurrent.STM
 import Control.Monad
 import Data.List
 import Data.Maybe
+import Data.IORef
 
 
 instance Eq Subscription where
     s == t = subscriptions s == subscriptions t
 
-
--------------------------------------------------------------------------------
-
 createSubscription :: IO () -> IO Subscription
 createSubscription a = do
-    ss <- newTMVarIO []  
-    return $ Subscription a ss   
+    b  <- newIORef False
+    ss <- newIORef []  
+    return $ Subscription a ss b   
 
-isUnsubscribed :: Subscription -> STM Bool
-isUnsubscribed s = fmap isNothing (tryReadTMVar $ subscriptions s)
+emptySubscription :: IO Subscription
+emptySubscription = createSubscription (return ())
+
+isUnsubscribed :: Subscription -> IO Bool
+isUnsubscribed s = readIORef $ isUnsubscribed_ s
 
 unsubscribe :: Subscription -> IO ()
 unsubscribe s = do
-    subs <- atomically (tryTakeTMVar $ subscriptions s)
-    when (isJust subs) $ do
-        onUnsubscribe s
-        mapM_ unsubscribe (fromJust subs)
+    b <- isUnsubscribed s
+    unless b $ do
+        atomicWriteIORef (isUnsubscribed_ s) True
+        onUnsubscribe s 
+        subs <- readIORef $ subscriptions s
+        mapM_ unsubscribe subs 
 
--- addSubscription only if not unsubscribed can be enforced 
--- using takeTMVar refSS. same goes for removeSubscription.
--- can be used if every onnext is wrapped in a subscription
--- check.
-addSubscription :: Subscription -> Subscription -> STM Bool
+addSubscription :: Subscription -> Subscription -> IO ()
 addSubscription s s' = do 
-    let refSS = subscriptions s
-    ss <- tryTakeTMVar refSS
-    if isJust ss 
-        then putTMVar refSS (s': fromJust ss) >> return True 
-        else return False
+    b <- isUnsubscribed s
+    unless b $ atomicModifyIORef' (subscriptions s) $ \ss -> (s':ss, ())
 
-removeSubscription :: Subscription -> Subscription -> STM Bool
+removeSubscription :: Subscription -> Subscription -> IO ()
 removeSubscription s s' = do 
-    let refSS = subscriptions s
-    ss <- tryTakeTMVar refSS
-    if isJust ss 
-        then putTMVar refSS (delete s' $ fromJust ss) >> return True
-        else return False
+    b <- isUnsubscribed s
+    unless b $ atomicModifyIORef' (subscriptions s) $ \ss -> (delete s' ss, ())    

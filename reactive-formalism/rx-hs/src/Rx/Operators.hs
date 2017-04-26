@@ -10,11 +10,13 @@ import Control.Concurrent.MVar
 import Control.Concurrent.STM
 import Control.Exception
 import Control.Monad
+import Control.Arrow
 import Data.Functor.Contravariant
 import Data.Maybe
+import Data.IORef
 
 lift :: Observable a -> (Observer b -> Observer a) -> Observable b
-lift obs f = Observable (onSubscribe obs . f)
+lift obs f = Observable (subscribe_ obs . f)
 
 -- probably not needed
 rxMap :: Observable a -> (a -> b) -> Observable b
@@ -30,120 +32,114 @@ rxFilter = undefined -- mfilter
 rxFlatMap :: Observable a -> (a -> Observable b) -> Observable b
 rxFlatMap obs f = Observable $ \downstream ->
     let
-        onNext_ gate activeRef hasError hasCompleted val = join . atomically $ do
-            active <- takeTMVar activeRef
-            putTMVar activeRef (active+1)
-            return $ do 
-                s <- createSubscription (return ())
-                let inner = Observer (innerOnNext_)
-                                     (onError_ hasError)
-                                     (innerOnCompleted_ s)                    
-                                     (s)
-                -- here we can check for the downstream sub to not be unsubscribed before doing all this job
-                -- probably better to use the subscribe so we make the observer safe. this way if the downstream
-                -- is unsubscribed, the inner sub will be as well and inneronnext wont go though. this is useless
-                -- if the first comment is implememnted, which is better.
-                _ <- atomically $ addSubscription (subscription downstream) (subscription inner)
-                handle (onError_ hasError) $ onSubscribe (f val) inner
-            where
-                innerOnNext_ v = do
-                    lock <- takeMVar gate
-                    handle (onError_ hasError) $ onNext downstream v
-                    putMVar gate lock
-
-                innerOnCompleted_ s = join . atomically $ do
-                    completed <- readTMVar hasCompleted
-                    active    <- takeTMVar activeRef
-                    putTMVar activeRef (active-1)
-                    return $ if completed && active - 1 == 0 
-                                then onCompleted downstream 
-                                else atomically $ void (removeSubscription (subscription downstream) s)
-        
-        onError_ hasError e = join . atomically $ do
-            hasE <- takeTMVar hasError
-            putTMVar hasError True
-            return . when (not hasE) $ onError downstream e
-        
-        onCompleted_ activeRef hasCompleted = join . atomically $ do
-            completed <- takeTMVar hasCompleted
-            active    <- readTMVar activeRef
-            putTMVar hasCompleted True
-            return . when (not completed && active == 0) $ onCompleted downstream
+        onNext_ gate activeRef hasError hasCompleted val = do
+            atomically $ modifyTVar activeRef (+1)
+            s <- emptySubscription
+            let inner = Observer (innerOnNext_)
+                                 (onError_ hasError)
+                                 (innerOnCompleted_ s)                    
+                                 (s)
+            addSubscription (subscription downstream) (subscription inner)
+            handle (onError_ hasError) . void $ subscribe_ (f val) inner
+                where
+                    innerOnNext_ v = 
+                        withMVar gate $ \_ -> onNext downstream v    
+                    innerOnCompleted_ s = do
+                        cond <- atomically $ do 
+                            c <- readTVar hasCompleted
+                            modifyTVar activeRef (subtract 1)
+                            a <- readTVar activeRef
+                            return (c && a == 0)
+                        if cond 
+                            then onCompleted downstream
+                            else removeSubscription (subscription downstream) s     
+        onError_ hasError e = do
+            cond <- atomically $ do 
+                e <- swapTVar hasError True
+                return (not e)
+            when cond $ onError downstream e 
+        onCompleted_ activeRef hasCompleted = do
+            cond <- atomically $ do
+                c <- swapTVar hasCompleted True
+                a <- readTVar activeRef
+                return (not c && a == 0)
+            when cond $ onCompleted downstream
     in do 
         gate         <- newMVar ()
-        activeRef    <- newTMVarIO (0 :: Int) 
-        hasError     <- newTMVarIO False
-        hasCompleted <- newTMVarIO False
+        activeRef    <- newTVarIO (0 :: Int) 
+        hasError     <- newTVarIO False
+        hasCompleted <- newTVarIO False
 
-        onSubscribe obs $ Observer (onNext_ gate activeRef hasError hasCompleted)
-                                   (onError_ hasError)
-                                   (onCompleted_ activeRef hasCompleted)
-                                   (subscription downstream) 
-
+        subscribe_ obs $ Observer (onNext_ gate activeRef hasError hasCompleted)
+                                  (onError_ hasError)
+                                  (onCompleted_ activeRef hasCompleted)
+                                  (subscription downstream)
 
 -- without a type signature, the internal functions are not polymorphic
 rxCombineLatest :: (a -> b -> r) -> Observable a -> Observable b -> Observable r
-rxCombineLatest combiner oa ob = Observable $ \downstream -> 
-    let
-        onNext_ :: TMVar t -> TMVar s -> (t -> s -> IO ()) -> t -> IO ()
-        onNext_ refT refS onNextFunc valT = join . atomically $ do
-            _ <- tryTakeTMVar refT
-            putTMVar refT valT 
-            maybeS <- tryReadTMVar refS
-            return . when (isJust maybeS) $ handle (onError downstream) (onNextFunc valT (fromJust maybeS))
+rxCombineLatest = undefined
+-- rxCombineLatest combiner oa ob = Observable $ \downstream -> 
+--     let
+--         onNext_ :: TMVar t -> TMVar s -> (t -> s -> IO ()) -> t -> IO ()
+--         onNext_ refT refS onNextFunc valT = join . atomically $ do
+--             _ <- tryTakeTMVar refT
+--             putTMVar refT valT 
+--             maybeS <- tryReadTMVar refS
+--             return . when (isJust maybeS) $ onNextFunc valT (fromJust maybeS)
 
-        onError_ :: TMVar Bool -> SomeException -> IO ()
-        onError_ hasError e = join . atomically $ do
-            hasE <- takeTMVar hasError
-            putTMVar hasError True
-            return . when (not hasE) $ onError downstream e
+--         onError_ :: TMVar Bool -> SomeException -> IO ()
+--         onError_ hasError e = join . atomically $ do
+--             hasE <- takeTMVar hasError
+--             putTMVar hasError True
+--             return . when (not hasE) $ onError downstream e
 
-        onCompleted_ :: TMVar t -> TMVar Bool -> TMVar Int-> IO ()
-        onCompleted_ refT hasCompleted hasActive = join . atomically $ do
-            emptyT <- isEmptyTMVar refT
-            hasC   <- takeTMVar hasCompleted
-            active <- takeTMVar hasActive
-            putTMVar hasCompleted True
-            putTMVar hasActive (active - 1)
-            return . when (emptyT && not hasC || active - 1 == 0) $ onCompleted downstream
-    in do
-        active       <- newTMVarIO 2
-        refA         <- newEmptyTMVarIO
-        refB         <- newEmptyTMVarIO
-        hasError     <- newTMVarIO False
-        hasCompleted <- newTMVarIO False
-        let obrA = Observer (onNext_ refA refB (\a b -> onNext downstream (combiner a b))) 
-                            (onError_ hasError) 
-                            (onCompleted_ refA hasCompleted active) 
-                            (subscription downstream)
-        let obrB = Observer (onNext_ refB refA (\b a -> onNext downstream (combiner a b))) 
-                            (onError_ hasError) 
-                            (onCompleted_ refB hasCompleted active) 
-                            (subscription downstream)
-        onSubscribe ob obrB
-        onSubscribe oa obrA
+--         onCompleted_ :: TMVar t -> TMVar Bool -> TMVar Int-> IO ()
+--         onCompleted_ refT hasCompleted hasActive = join . atomically $ do
+--             emptyT <- isEmptyTMVar refT
+--             hasC   <- takeTMVar hasCompleted
+--             active <- takeTMVar hasActive
+--             putTMVar hasCompleted True
+--             putTMVar hasActive (active - 1)
+--             return . when (emptyT && not hasC || active - 1 == 0) $ 
+--                 onCompleted downstream
+--     in do
+--         active       <- newTMVarIO 2
+--         refA         <- newEmptyTMVarIO
+--         refB         <- newEmptyTMVarIO
+--         hasError     <- newTMVarIO False
+--         hasCompleted <- newTMVarIO False
+--         let obrA = Observer (onNext_ refA refB (fa downstream)) 
+--                             (onError_ hasError) 
+--                             (onCompleted_ refA hasCompleted active) 
+--                             (subscription downstream)
+--         let obrB = Observer (onNext_ refB refA (fb downstream)) 
+--                             (onError_ hasError) 
+--                             (onCompleted_ refB hasCompleted active) 
+--                             (subscription downstream)
+--         _subscribe ob obrB
+--         _subscribe oa obrA
+--         where
+--             fa downstream = (\a b -> onNext downstream (combiner a b))
+--             fb downstream = (\b a -> onNext downstream (combiner a b))
 
 rxTake :: Observable a -> Int -> Observable a
-rxTake obs n = Observable $ \downstream -> 
+rxTake obs n = Observable $ \ds -> 
     let  
-        onNext_ remainingRef v = join . atomically $ do
-            remaining <- fmap pred $ readTVar remainingRef
-            writeTVar remainingRef remaining
-            return $ action remaining
-            where
-                action r
-                    | r > 0     = onNext downstream v
-                    | r == 0    = onNext downstream v >> onCompleted downstream
-                    | otherwise = return () 
+        s = subscription ds
+        onNext_ nRef v = do
+            n' <- atomicModifyIORef' nRef (pred &&& pred)
+            when (n' >= 0) $ onNext ds v
+            when (n' == 0) $ onCompleted ds
     in 
-        if n <= 0 then onCompleted downstream
-        else do 
-            remainingRef <- newTVarIO n
-            let obr = Observer (onNext_ remainingRef)
-                               (onError downstream)
-                               (onCompleted downstream)
-                               (subscription downstream)
-            onSubscribe obs obr
+        if n <= 0 
+            then onCompleted ds >> return s
+            else do 
+                nRef <- newIORef n
+                let obr = Observer (onNext_ nRef)
+                                   (onError ds)
+                                   (onCompleted ds)
+                                   (s)
+                subscribe_ obs obr
 
 rxTakeUntil :: Observable a -> (a -> Bool) -> Observable a
 rxTakeUntil obs p = rxTakeUntil_ obs p True
@@ -152,29 +148,30 @@ rxTakeWhile :: Observable a -> (a -> Bool) -> Observable a
 rxTakeWhile obs p = rxTakeUntil_ obs (not . p) False
 
 rxTakeUntil_ :: Observable a -> (a -> Bool) -> Bool -> Observable a
-rxTakeUntil_ obs p includeLast = Observable $ \downstream -> 
-    let  
-        onNext_ completedRef v = join . atomically $ do
-            completed <- readTVar completedRef
-            let shouldComplete = p v
-            if not completed && shouldComplete 
-                then writeTVar completedRef True
-                else return ()
-            return $ action completed shouldComplete
-            where
-                action c sc
-                    | not c && not sc = onNext downstream v
-                    | not c && sc     = if includeLast
-                                            then onNext downstream v >> onCompleted downstream
-                                            else onCompleted downstream
-                    | otherwise       = return () 
-    in do 
-        completedRef <- newTVarIO False
-        let obr = Observer (onNext_ completedRef)
-                           (onError downstream)
-                           (onCompleted downstream)
-                           (subscription downstream)
-        onSubscribe obs obr
+rxTakeUntil_ = undefined
+-- rxTakeUntil_ obs p includeLast = Observable $ \downstream -> 
+--     let  
+--         onNext_ completedRef v = join . atomically $ do
+--             completed <- readTVar completedRef
+--             let shouldComplete = p v
+--             if not completed && shouldComplete 
+--                 then writeTVar completedRef True
+--                 else return ()
+--             return $ action completed shouldComplete
+--             where
+--                 action c sc
+--                     | not c && not sc = onNext downstream v
+--                     | not c && sc     = if includeLast
+--                                             then onNext downstream v >> onCompleted downstream
+--                                             else onCompleted downstream
+--                     | otherwise       = return () 
+--     in do 
+--         completedRef <- newTVarIO False
+--         let obr = Observer (onNext_ completedRef)
+--                            (onError downstream)
+--                            (onCompleted downstream)
+--                            (subscription downstream)
+--         onSubscribe obs obr
 
 -- buffer :: Int -> Observable [a]
 -- bufferWithSkip :: Int -> Int -> Observable [a]

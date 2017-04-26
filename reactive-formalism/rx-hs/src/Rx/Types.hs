@@ -2,10 +2,11 @@ module Rx.Types where
 
 import Control.Concurrent.STM
 import Control.Exception
+import Data.IORef
 
 
 newtype Observable a = Observable 
-    { onSubscribe :: Observer a -> IO () 
+    { subscribe_ :: Observer a -> IO Subscription 
     }
 
 data Observer a = Observer 
@@ -16,7 +17,8 @@ data Observer a = Observer
     }
 
 data Subscription = Subscription 
-    { onUnsubscribe :: IO ()
-    , subscriptions :: TMVar [Subscription] 
+    { onUnsubscribe   :: IO ()
+    , subscriptions   :: IORef [Subscription] 
+    , isUnsubscribed_ :: IORef Bool
     }
 

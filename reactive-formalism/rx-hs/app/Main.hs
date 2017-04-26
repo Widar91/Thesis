@@ -25,9 +25,9 @@ main = do
     -- printObserver "doneRange" >>= subscribe (observableRange 0 5)
 
     printObserver "doneTake" >>= subscribe (streamI `rxTake` 1)     
-    printObserver "doneTakeUntil" >>= subscribe (streamI `rxTakeUntil` (>3))    
-    printObserver "doneTakeWhile" >>= subscribe (streamI `rxTakeWhile` (<3))    
-    -- printObserver "doneMerge" >>= subscribe (rxMerge streamI streamS)
+    -- printObserver "doneTakeUntil" >>= subscribe (streamI `rxTakeUntil` (>3))    
+    -- printObserver "doneTakeWhile" >>= subscribe (streamI `rxTakeWhile` (<3))    
+    -- -- printObserver "doneMerge" >>= subscribe (rxMerge streamI streamS)
 
     -- printObserver "done3" >>= subscribe (rxFilter (>1) streamI)
     -- printObserver "done4" >>= subscribe (rxFilter (error "error") streamI)
@@ -52,31 +52,31 @@ streamF = pure (+1)
 printObserver :: Show a => String -> IO (Observer a)
 printObserver s = createObserver print (\e -> print $ "printObserver - error: " ++ show e) (print s) 
 
-subscriptionTest :: IO ()
-subscriptionTest = do
-    print "Subscription Tests"
-    ss1 <- newTMVarIO []
-    ss2 <- newTMVarIO []
-    let s1 = Subscription (print "unsubscribed s1") ss1
-    let s2 = Subscription (print "unsubscribed s2") ss2
-    obr :: Observer Integer <- printObserver "done1"
-    atomically (addSubscription (subscription obr) s1 >> addSubscription (subscription obr) s2)
-    b <- atomically (isUnsubscribed (subscription obr))
-    print b
-    ss <- atomically $ readTMVar (subscriptions (subscription obr))
-    print $ length ss
-    print "removing subscription s1"
-    --atomically (removeSubscription (subscription obr) s1)
-    unsubscribe s1
-    print "removed s1"
-    ss' <- atomically $ readTMVar (subscriptions (subscription obr))
-    print $ length ss'
-    unsubscribe (subscription obr) 
-    print "unsubscribed"
-    --atomically (addSubscription (subscription obr) s1 >> addSubscription (subscription obr) s2)
-    b <- atomically (isUnsubscribed (subscription obr))
-    print b
-    unsubscribe (subscription obr)
-    b <- atomically (isUnsubscribed (subscription obr))
-    print b
+-- subscriptionTest :: IO ()
+-- subscriptionTest = do
+--     print "Subscription Tests"
+--     ss1 <- newTMVarIO []
+--     ss2 <- newTMVarIO []
+--     let s1 = Subscription (print "unsubscribed s1") ss1
+--     let s2 = Subscription (print "unsubscribed s2") ss2
+--     obr :: Observer Integer <- printObserver "done1"
+--     atomically (addSubscription (subscription obr) s1 >> addSubscription (subscription obr) s2)
+--     b <- atomically (isUnsubscribed (subscription obr))
+--     print b
+--     ss <- atomically $ readTMVar (subscriptions (subscription obr))
+--     print $ length ss
+--     print "removing subscription s1"
+--     --atomically (removeSubscription (subscription obr) s1)
+--     unsubscribe s1
+--     print "removed s1"
+--     ss' <- atomically $ readTMVar (subscriptions (subscription obr))
+--     print $ length ss'
+--     unsubscribe (subscription obr) 
+--     print "unsubscribed"
+--     --atomically (addSubscription (subscription obr) s1 >> addSubscription (subscription obr) s2)
+--     b <- atomically (isUnsubscribed (subscription obr))
+--     print b
+--     unsubscribe (subscription obr)
+--     b <- atomically (isUnsubscribed (subscription obr))
+--     print b
     

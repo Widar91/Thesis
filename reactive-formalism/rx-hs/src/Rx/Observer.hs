@@ -7,7 +7,7 @@ import Data.Functor.Contravariant
 
 
 instance Contravariant Observer where
-    contramap f obr = Observer (handle (onError obr) . onNext obr . f)
+    contramap f obr = Observer (onNext obr . f)
                                (onError obr)
                                (onCompleted obr)
                                (subscription obr)
