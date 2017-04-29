@@ -1,0 +1,4 @@
+extra-deps: ["HGamer3D-0.8.0", "fresco-binding-0.2.0", "vect-0.4.7"]
+resolver: lts-5.8
+flags: {}
+packages: [".", "../reactive-formalism/rx-hs"]

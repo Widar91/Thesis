@@ -33,6 +33,7 @@ executable rx-hs-exe
   build-depends:       base
                      , rx-hs
                      , stm
+                     --, GLUT
   default-language:    Haskell2010
 
 test-suite rx-hs-test

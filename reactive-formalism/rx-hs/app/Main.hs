@@ -6,6 +6,7 @@ import Rx
 import Control.Concurrent.STM
 
 
+
 main :: IO ()
 main = do
     --printObserver "doneCL"    >>= subscribe (rxCombineLatest (+) streamI streamS)
@@ -79,4 +80,23 @@ printObserver s = createObserver print (\e -> print $ "printObserver - error: " 
 --     unsubscribe (subscription obr)
 --     b <- atomically (isUnsubscribed (subscription obr))
 --     print b
+
+-- obs :: Observable Char
+-- obs = observableCreate $ \observer -> do
+--     keyboardCallback $= Just (\c p -> onNext observer c)    
+
+-- display :: DisplayCallback
+-- display = do
+--   clear [ ColorBuffer ]
+--   flush
+
+-- main :: IO ()
+-- main = do
+--   (_progName, _args) <- getArgsAndInitialize
+--   _window <- createWindow "Observable Keyboard"
+--   obr <- createObserver print (\e -> print $ "printObserver - error: " ++ show e) (print "done") 
+--   subscribe obs obr
+--   displayCallback $= display
+--   mainLoop
+
     
